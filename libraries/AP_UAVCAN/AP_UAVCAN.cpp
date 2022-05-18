@@ -551,7 +551,7 @@ void AP_UAVCAN::SRV_send_esc(void)
                 
                 if ( ((AP_MotorsMatrix*)AP_MotorsMatrix::get_singleton())->_ignt_mode ) {
                     for (uint8_t j = 20; j < 26; j++) {
-                        AP_UAVCAN::set_parameter_on_node(j, "m.voltage_ramp", 80.0, *cb);
+                        set_parameter_on_node(j, "m.voltage_ramp", 80.0 , param_float_cb);
                     }
                     scaled = constrain_float((-1.0*scaled), (-1*cmd_max), 0);
                 }
