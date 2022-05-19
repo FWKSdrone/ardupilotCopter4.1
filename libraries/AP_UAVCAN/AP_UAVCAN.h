@@ -250,6 +250,7 @@ private:
     bool param_request_sent = true;
     HAL_Semaphore _param_sem;
     uint8_t param_request_node_id;
+    
 
     // save parameters on a node
     ParamSaveCb *save_param_cb;

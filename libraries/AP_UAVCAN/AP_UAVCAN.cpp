@@ -527,6 +527,8 @@ void AP_UAVCAN::SRV_send_esc(void)
 
     uint8_t active_esc_num = 0, max_esc_num = 0;
     uint8_t k = 0;
+    static uint8_t current_getset_node;
+    bool send_params=false;
 
     WITH_SEMAPHORE(SRV_sem);
 
@@ -550,24 +552,37 @@ void AP_UAVCAN::SRV_send_esc(void)
                 float scaled = cmd_max * (hal.rcout->scale_esc_to_unity(_SRV_conf[i].pulse) + 1.0) / 2.0;
                 
                 if ( ((AP_MotorsMatrix*)AP_MotorsMatrix::get_singleton())->_ignt_mode ) {
-                    for (uint8_t j = 20; j < 26; j++) {
-                        set_parameter_on_node(j, "m.voltage_ramp", 80.0 , param_float_cb);
+                    if (current_getset_node<26) {
+                        send_params=true;
+                        scaled = constrain_float(0, 0, cmd_max);
+                    }else{
+                        scaled = constrain_float((-1.0*scaled), (-1*cmd_max), 0);
                     }
-                    scaled = constrain_float((-1.0*scaled), (-1*cmd_max), 0);
                 }
                 else{
                     scaled = constrain_float(scaled, 0, cmd_max);
+                    current_getset_node=20;
                 }
                 esc_msg.cmd.push_back(static_cast<int>(scaled));
             } else {
+                current_getset_node=20;
                 esc_msg.cmd.push_back(static_cast<unsigned>(0));
             }
 
             k++;
         }
 
+        if (current_getset_node<26 && send_params) {
+            for (uint8_t j = 0; j < 3; j++) {
+                set_parameter_on_node(current_getset_node, "m.voltage_ramp", 80.0 , param_float_cb);
+            }
+            //gcs().send_text(MAV_SEVERITY_ERROR, "getset_node: %d ",current_getset_node);
+            current_getset_node++;
+        }
+
         esc_raw[_driver_index]->broadcast(esc_msg);
     }
+                
 }
 
 void AP_UAVCAN::SRV_push_servos()
