@@ -527,8 +527,6 @@ void AP_UAVCAN::SRV_send_esc(void)
 
     uint8_t active_esc_num = 0, max_esc_num = 0;
     uint8_t k = 0;
-    static uint8_t current_getset_node;
-    bool send_params=false;
 
     WITH_SEMAPHORE(SRV_sem);
 
@@ -542,9 +540,18 @@ void AP_UAVCAN::SRV_send_esc(void)
         }
     }
 
+    if ( ((AP_MotorsMatrix*)AP_MotorsMatrix::get_singleton())->_ignt_mode ) {
+        if (!fwks_param_set) {
+            fwks_getset(80.0,20,25);
+        }
+    }else{
+        fwks_param_set=false;
+    }
+
     // if at least one is active (update) we need to send to all
     if (active_esc_num > 0) {
         k = 0;
+
 
         for (uint8_t i = 0; i < max_esc_num && k < 20; i++) {
             if ((((uint32_t) 1) << i) & _esc_bm) {
@@ -552,8 +559,7 @@ void AP_UAVCAN::SRV_send_esc(void)
                 float scaled = cmd_max * (hal.rcout->scale_esc_to_unity(_SRV_conf[i].pulse) + 1.0) / 2.0;
                 
                 if ( ((AP_MotorsMatrix*)AP_MotorsMatrix::get_singleton())->_ignt_mode ) {
-                    if (current_getset_node<26) {
-                        send_params=true;
+                    if (!fwks_param_set) {
                         scaled = constrain_float(0, 0, cmd_max);
                     }else{
                         scaled = constrain_float((-1.0*scaled), (-1*cmd_max), 0);
@@ -561,28 +567,29 @@ void AP_UAVCAN::SRV_send_esc(void)
                 }
                 else{
                     scaled = constrain_float(scaled, 0, cmd_max);
-                    current_getset_node=20;
                 }
                 esc_msg.cmd.push_back(static_cast<int>(scaled));
             } else {
-                current_getset_node=20;
                 esc_msg.cmd.push_back(static_cast<unsigned>(0));
             }
 
             k++;
         }
 
-        if (current_getset_node<26 && send_params) {
-            for (uint8_t j = 0; j < 3; j++) {
-                set_parameter_on_node(current_getset_node, "m.voltage_ramp", 80.0 , param_float_cb);
-            }
-            //gcs().send_text(MAV_SEVERITY_ERROR, "getset_node: %d ",current_getset_node);
-            current_getset_node++;
-        }
-
         esc_raw[_driver_index]->broadcast(esc_msg);
     }
                 
+}
+
+void AP_UAVCAN::fwks_getset(float paramvalue, uint8_t node_id_start, uint8_t node_id_end)
+{
+     for (uint8_t i = node_id_start; i < node_id_end+1; i++) {
+            for (uint8_t j = 0; j < 3; j++) {
+                set_parameter_on_node(i, "m.voltage_ramp", paramvalue , param_float_cb);
+            }
+            //gcs().send_text(MAV_SEVERITY_ERROR, "getset_node: %d ",current_getset_node);
+     }
+    fwks_param_set=true;
 }
 
 void AP_UAVCAN::SRV_push_servos()

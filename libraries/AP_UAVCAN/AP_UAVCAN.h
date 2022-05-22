@@ -250,6 +250,11 @@ private:
     bool param_request_sent = true;
     HAL_Semaphore _param_sem;
     uint8_t param_request_node_id;
+
+    // set Myxa ESCs Parameters
+    void fwks_getset(float paramvalue, uint8_t node_id_start, uint8_t node_id_end);
+    uint8_t current_getset_node;
+    bool fwks_param_set;
     
 
     // save parameters on a node
