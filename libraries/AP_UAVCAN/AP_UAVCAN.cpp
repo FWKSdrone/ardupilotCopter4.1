@@ -527,10 +527,10 @@ void AP_UAVCAN::SRV_send_esc(void)
 
     uint8_t active_esc_num = 0, max_esc_num = 0;
     uint8_t k = 0;
-    static uint8_t current_getset_node;
-    bool send_params=false;
 
     WITH_SEMAPHORE(SRV_sem);
+
+    bool send_params=false;
 
     // find out how many esc we have enabled and if they are active at all
     for (uint8_t i = 0; i < UAVCAN_SRV_NUMBER; i++) {
@@ -552,7 +552,12 @@ void AP_UAVCAN::SRV_send_esc(void)
                 float scaled = cmd_max * (hal.rcout->scale_esc_to_unity(_SRV_conf[i].pulse) + 1.0) / 2.0;
                 
                 if ( ((AP_MotorsMatrix*)AP_MotorsMatrix::get_singleton())->_ignt_mode ) {
+                    if(!_ign_triggered){
+                        current_getset_node=20;
+                        _ign_triggered=true;
+                    }
                     if (current_getset_node<26) {
+                        _getset_value=80.0;
                         send_params=true;
                         scaled = constrain_float(0, 0, cmd_max);
                     }else{
@@ -560,12 +565,20 @@ void AP_UAVCAN::SRV_send_esc(void)
                     }
                 }
                 else{
-                    scaled = constrain_float(scaled, 0, cmd_max);
-                    current_getset_node=20;
+                    if(_ign_triggered){
+                        current_getset_node=20;
+                        _ign_triggered=false;
+                    }
+                    if (current_getset_node<26) {
+                        _getset_value=20.0;
+                        send_params=true;
+                        scaled = constrain_float(0, 0, cmd_max);
+                    }else{
+                        scaled = constrain_float(scaled, 0, cmd_max);
+                    }
                 }
                 esc_msg.cmd.push_back(static_cast<int>(scaled));
             } else {
-                current_getset_node=20;
                 esc_msg.cmd.push_back(static_cast<unsigned>(0));
             }
 
@@ -574,10 +587,10 @@ void AP_UAVCAN::SRV_send_esc(void)
 
         if (current_getset_node<26 && send_params) {
             for (uint8_t j = 0; j < 3; j++) {
-                set_parameter_on_node(current_getset_node, "m.voltage_ramp", 80.0 , param_float_cb);
+                set_parameter_on_node(current_getset_node, "m.voltage_ramp", _getset_value , param_float_cb);
             }
             //gcs().send_text(MAV_SEVERITY_ERROR, "getset_node: %d ",current_getset_node);
-            current_getset_node++;
+            current_getset_node=current_getset_node+1;
         }
 
         esc_raw[_driver_index]->broadcast(esc_msg);

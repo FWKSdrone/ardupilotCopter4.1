@@ -265,6 +265,9 @@ private:
     AP_Int16 _servo_rate_hz;
     AP_Int16 _options;
     AP_Int16 _notify_state_hz;
+    AP_Int8 current_getset_node;
+    bool _ign_triggered=true;
+    float _getset_value=80.0;
 
     uavcan::Node<0> *_node;
 
