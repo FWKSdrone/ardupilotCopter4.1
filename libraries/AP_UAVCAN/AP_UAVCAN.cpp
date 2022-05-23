@@ -139,6 +139,42 @@ const AP_Param::GroupInfo AP_UAVCAN::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("NTF_RT", 6, AP_UAVCAN, _notify_state_hz, 20),
 
+    //ESC param change parameters BEGIN
+
+    // @Param: ESC_NB
+    // @DisplayName: ESC node start
+    // @Description: Beginning address of the ESCs for param change
+    // @Range: 0 128
+    // @Units: Add
+    // @User: Advanced
+    AP_GROUPINFO("ESC_NB", 7, AP_UAVCAN, _esc_node_start, 20),
+
+    // @Param: ESC_NE
+    // @DisplayName: ESC node end
+    // @Description: Ending address of the ESCs for param change
+    // @Range: 0 128
+    // @Units: Add
+    // @User: Advanced
+    AP_GROUPINFO("ESC_NE", 8, AP_UAVCAN, _esc_node_end, 25),
+
+    // @Param: VAL_IN
+    // @DisplayName: Value ign on
+    // @Description: Value sent to ESCs when ICE is NOT starting
+    // @Range: 1 200
+    // @Units: V/s
+    // @User: Advanced
+    AP_GROUPINFO("VAL_IN", 9, AP_UAVCAN, _param_ign_off, 20.0),
+
+    // @Param: VAL_IY
+    // @DisplayName: Value ign off
+    // @Description: Value sent to ESCs when ICE IS starting
+    // @Range: 1 200
+    // @Units: V/s
+    // @User: Advanced
+    AP_GROUPINFO("VAL_IY", 10, AP_UAVCAN, _param_ign_on, 80.0),
+
+    //ESC param change parameters END
+
     AP_GROUPEND
 };
 
@@ -553,11 +589,11 @@ void AP_UAVCAN::SRV_send_esc(void)
                 
                 if ( ((AP_MotorsMatrix*)AP_MotorsMatrix::get_singleton())->_ignt_mode ) {
                     if(!_ign_triggered){
-                        current_getset_node=20;
+                        current_getset_node=_esc_node_start;
                         _ign_triggered=true;
                     }
-                    if (current_getset_node<26) {
-                        _getset_value=80.0;
+                    if (current_getset_node<=_esc_node_end) {
+                        _getset_value=_param_ign_on;
                         send_params=true;
                         scaled = constrain_float(0, 0, cmd_max);
                     }else{
@@ -566,11 +602,11 @@ void AP_UAVCAN::SRV_send_esc(void)
                 }
                 else{
                     if(_ign_triggered){
-                        current_getset_node=20;
+                        current_getset_node=_esc_node_start;
                         _ign_triggered=false;
                     }
-                    if (current_getset_node<26) {
-                        _getset_value=20.0;
+                    if (current_getset_node<=_esc_node_end) {
+                        _getset_value=_param_ign_off;
                         send_params=true;
                         scaled = constrain_float(0, 0, cmd_max);
                     }else{

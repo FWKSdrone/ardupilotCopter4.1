@@ -268,6 +268,11 @@ private:
     AP_Int8 current_getset_node;
     bool _ign_triggered=true;
     float _getset_value=80.0;
+    AP_Int8 _esc_node_start;
+    AP_Int8 _esc_node_end;
+    AP_Float _param_ign_off;
+    AP_Float _param_ign_on;
+
 
     uavcan::Node<0> *_node;
 
