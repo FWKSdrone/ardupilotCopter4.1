@@ -622,11 +622,22 @@ void AP_UAVCAN::SRV_send_esc(void)
         }
 
         if (current_getset_node<26 && send_params) {
-            for (uint8_t j = 0; j < 3; j++) {
-                set_parameter_on_node(current_getset_node, "m.voltage_ramp", _getset_value , param_float_cb);
+            if(!_can_timer_on){
+                for (uint8_t j = 0; j < 2; j++) {
+                    set_parameter_on_node(current_getset_node, "m.voltage_ramp", _getset_value , param_float_cb);
+                }
+                //gcs().send_text(MAV_SEVERITY_ERROR, "getset_node: %d ",current_getset_node);
+                _can_timer_on=true;
+            }else{
+                if(_can_timer>_can_timer_cap){
+                    _can_timer=0;
+                    _can_timer_on=false;
+                    
+                    current_getset_node=current_getset_node+1;
+                }else{
+                    _can_timer=_can_timer+1;
+                }
             }
-            //gcs().send_text(MAV_SEVERITY_ERROR, "getset_node: %d ",current_getset_node);
-            current_getset_node=current_getset_node+1;
         }
 
         esc_raw[_driver_index]->broadcast(esc_msg);

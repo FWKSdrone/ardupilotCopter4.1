@@ -47,6 +47,8 @@
 
 #define AP_UAVCAN_MAX_LED_DEVICES 4
 
+#define _can_timer_cap 1000
+
 // fwd-declare callback classes
 class ButtonCb;
 class TrafficReportCb;
@@ -272,6 +274,8 @@ private:
     AP_Int8 _esc_node_end;
     AP_Float _param_ign_off;
     AP_Float _param_ign_on;
+    AP_Int32 _can_timer=0;
+    bool _can_timer_on=false;
 
 
     uavcan::Node<0> *_node;
