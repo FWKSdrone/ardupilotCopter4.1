@@ -157,21 +157,13 @@ const AP_Param::GroupInfo AP_UAVCAN::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ESC_NE", 8, AP_UAVCAN, _esc_node_end, 25),
 
-    // @Param: VAL_IN
-    // @DisplayName: Value ign on
-    // @Description: Value sent to ESCs when ICE is NOT starting
+    // @Param: SET_MD
+    // @DisplayName: Set param mode
+    // @Description: ESC parameter set mode
     // @Range: 1 200
     // @Units: V/s
     // @User: Advanced
-    AP_GROUPINFO("VAL_IN", 9, AP_UAVCAN, _param_ign_off, 20.0),
-
-    // @Param: VAL_IY
-    // @DisplayName: Value ign off
-    // @Description: Value sent to ESCs when ICE IS starting
-    // @Range: 1 200
-    // @Units: V/s
-    // @User: Advanced
-    AP_GROUPINFO("VAL_IY", 10, AP_UAVCAN, _param_ign_on, 80.0),
+    AP_GROUPINFO("SET_MD", 9, AP_UAVCAN, _param_set_mode, 0),
 
     //ESC param change parameters END
 
@@ -566,8 +558,6 @@ void AP_UAVCAN::SRV_send_esc(void)
 
     WITH_SEMAPHORE(SRV_sem);
 
-    bool send_params=false;
-
     // find out how many esc we have enabled and if they are active at all
     for (uint8_t i = 0; i < UAVCAN_SRV_NUMBER; i++) {
         if ((((uint32_t) 1) << i) & _esc_bm) {
@@ -588,26 +578,14 @@ void AP_UAVCAN::SRV_send_esc(void)
                 float scaled = cmd_max * (hal.rcout->scale_esc_to_unity(_SRV_conf[i].pulse) + 1.0) / 2.0;
                 
                 if ( ((AP_MotorsMatrix*)AP_MotorsMatrix::get_singleton())->_ignt_mode ) {
-                    if(!_ign_triggered){
-                        current_getset_node=_esc_node_start;
-                        _ign_triggered=true;
-                    }
-                    if (current_getset_node<=_esc_node_end) {
-                        _getset_value=_param_ign_on;
-                        send_params=true;
+                    if (_param_set_mode>0) {
                         scaled = constrain_float(0, 0, cmd_max);
                     }else{
                         scaled = constrain_float((-1.0*scaled), (-1*cmd_max), 0);
                     }
                 }
                 else{
-                    if(_ign_triggered){
-                        current_getset_node=_esc_node_start;
-                        _ign_triggered=false;
-                    }
-                    if (current_getset_node<=_esc_node_end) {
-                        _getset_value=_param_ign_off;
-                        send_params=true;
+                    if (_param_set_mode>0) {
                         scaled = constrain_float(0, 0, cmd_max);
                     }else{
                         scaled = constrain_float(scaled, 0, cmd_max);
@@ -621,19 +599,38 @@ void AP_UAVCAN::SRV_send_esc(void)
             k++;
         }
 
-        if (current_getset_node<26 && send_params) {
+        if (current_getset_node<=(_esc_node_end+1) && _param_set_mode>0) {
             if(!_can_timer_on){
-                for (uint8_t j = 0; j < 2; j++) {
-                    set_parameter_on_node(current_getset_node, "m.voltage_ramp", _getset_value , param_float_cb);
+                if(current_getset_node<=_esc_node_end){
+                    for (uint8_t j = 0; j < 2; j++) {
+                        switch (hal.util->safety_switch_state()) {
+                            case 1:
+                            //value to send when starting the ICE
+                                set_parameter_on_node(current_getset_node, "uavcan.esc_rcm", 2 , param_int_cb);
+                                break;
+                            case 2:
+                            //value to send after ICE is running
+                                set_parameter_on_node(current_getset_node, "uavcan.esc_rcm", 1 , param_int_cb);
+                                break;
+                            default:
+                                // nothing to send
+                                break;
+                                }   
+                    }
                 }
                 //gcs().send_text(MAV_SEVERITY_ERROR, "getset_node: %d ",current_getset_node);
                 _can_timer_on=true;
             }else{
                 if(_can_timer>_can_timer_cap){
+                    if(current_getset_node<=_esc_node_end){
+                        send_reboot_request(current_getset_node);
+                        current_getset_node=current_getset_node+1;
+                    }else{
+                        _param_set_mode=0;
+                        current_getset_node=_esc_node_start;
+                    }
                     _can_timer=0;
                     _can_timer_on=false;
-                    
-                    current_getset_node=current_getset_node+1;
                 }else{
                     _can_timer=_can_timer+1;
                 }
