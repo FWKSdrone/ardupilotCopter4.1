@@ -99,6 +99,34 @@ const AP_Param::GroupInfo AP_CANManager::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("LOGLEVEL", 8, AP_CANManager, _loglevel, AP_CANManager::LOG_NONE),
 
+    //ESC param change parameters BEGIN
+
+    // @Param: ESC_NB
+    // @DisplayName: ESC node start
+    // @Description: Beginning address of the ESCs for param change
+    // @Range: 0 128
+    // @Units: Add
+    // @User: Advanced
+    AP_GROUPINFO("ESC_NB", 9, AP_CANManager, _esc_node_start, 20),
+
+    // @Param: ESC_NE
+    // @DisplayName: ESC node end
+    // @Description: Ending address of the ESCs for param change
+    // @Range: 0 128
+    // @Units: Add
+    // @User: Advanced
+    AP_GROUPINFO("ESC_NE", 10, AP_CANManager, _esc_node_end, 25),
+
+    // @Param: SET_MD
+    // @DisplayName: Set param mode
+    // @Description: ESC parameter set mode
+    // @Range: 1 200
+    // @Units: V/s
+    // @User: Advanced
+    AP_GROUPINFO("SET_MD", 11, AP_CANManager, _param_set_mode, 0),
+
+    //ESC param change parameters END
+
     AP_GROUPEND
 };
 

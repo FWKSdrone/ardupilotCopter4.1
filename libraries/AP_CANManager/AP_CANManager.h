@@ -67,6 +67,13 @@ public:
     };
 
     void init(void);
+    
+    //Node mode change parameters
+    AP_Int8 _esc_node_start;
+    AP_Int8 _esc_node_end;
+    AP_Int8 _param_set_mode;
+
+
 
     // register a new driver
     bool register_driver(Driver_Type dtype, AP_CANDriver *driver);

@@ -139,34 +139,6 @@ const AP_Param::GroupInfo AP_UAVCAN::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("NTF_RT", 6, AP_UAVCAN, _notify_state_hz, 20),
 
-    //ESC param change parameters BEGIN
-
-    // @Param: ESC_NB
-    // @DisplayName: ESC node start
-    // @Description: Beginning address of the ESCs for param change
-    // @Range: 0 128
-    // @Units: Add
-    // @User: Advanced
-    AP_GROUPINFO("ESC_NB", 7, AP_UAVCAN, _esc_node_start, 20),
-
-    // @Param: ESC_NE
-    // @DisplayName: ESC node end
-    // @Description: Ending address of the ESCs for param change
-    // @Range: 0 128
-    // @Units: Add
-    // @User: Advanced
-    AP_GROUPINFO("ESC_NE", 8, AP_UAVCAN, _esc_node_end, 25),
-
-    // @Param: SET_MD
-    // @DisplayName: Set param mode
-    // @Description: ESC parameter set mode
-    // @Range: 1 200
-    // @Units: V/s
-    // @User: Advanced
-    AP_GROUPINFO("SET_MD", 9, AP_UAVCAN, _param_set_mode, 0),
-
-    //ESC param change parameters END
-
     AP_GROUPEND
 };
 
@@ -578,14 +550,14 @@ void AP_UAVCAN::SRV_send_esc(void)
                 float scaled = cmd_max * (hal.rcout->scale_esc_to_unity(_SRV_conf[i].pulse) + 1.0) / 2.0;
                 
                 if ( ((AP_MotorsMatrix*)AP_MotorsMatrix::get_singleton())->_ignt_mode ) {
-                    if (_param_set_mode>0) {
+                    if (AP_CANManager::get_singleton()->_param_set_mode>0) {
                         scaled = constrain_float(0, 0, cmd_max);
                     }else{
                         scaled = constrain_float((-1.0*scaled), (-1*cmd_max), 0);
                     }
                 }
                 else{
-                    if (_param_set_mode>0) {
+                    if (AP_CANManager::get_singleton()->_param_set_mode>0) {
                         scaled = constrain_float(0, 0, cmd_max);
                     }else{
                         scaled = constrain_float(scaled, 0, cmd_max);
@@ -599,11 +571,11 @@ void AP_UAVCAN::SRV_send_esc(void)
             k++;
         }
 
-        if (current_getset_node<=(_esc_node_end+1) && _param_set_mode>0) {
+        if (current_getset_node<=(AP_CANManager::get_singleton()->_esc_node_end+1) && AP_CANManager::get_singleton()->_param_set_mode>0) {
             if(!_can_timer_on){
-                if(current_getset_node<=_esc_node_end){
+                if(current_getset_node<=AP_CANManager::get_singleton()->_esc_node_end){
                     for (uint8_t j = 0; j < 2; j++) {
-                        switch (_param_set_mode) {
+                        switch (AP_CANManager::get_singleton()->_param_set_mode) {
                             case 1:
                             //value to send when starting the ICE
                                 set_parameter_on_node(current_getset_node, "uavcan.esc_rcm", 2 , param_int_cb);
@@ -622,12 +594,12 @@ void AP_UAVCAN::SRV_send_esc(void)
                 _can_timer_on=true;
             }else{
                 if(_can_timer>_can_timer_cap){
-                    if(current_getset_node<=_esc_node_end){
+                    if(current_getset_node<=AP_CANManager::get_singleton()->_esc_node_end){
                         send_reboot_request(current_getset_node);
                         current_getset_node=current_getset_node+1;
                     }else{
-                        _param_set_mode=0;
-                        current_getset_node=_esc_node_start;
+                        AP_CANManager::get_singleton()->_param_set_mode=0;
+                        current_getset_node=AP_CANManager::get_singleton()->_esc_node_start;
                     }
                     _can_timer=0;
                     _can_timer_on=false;

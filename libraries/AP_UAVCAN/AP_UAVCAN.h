@@ -269,9 +269,6 @@ private:
     AP_Int16 _notify_state_hz;
     AP_Int8 current_getset_node;
     bool _ign_triggered=true;
-    AP_Int8 _esc_node_start;
-    AP_Int8 _esc_node_end;
-    AP_Int8 _param_set_mode;
     int32_t _can_timer=0;
     bool _can_timer_on=false;
 
