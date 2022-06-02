@@ -603,7 +603,7 @@ void AP_UAVCAN::SRV_send_esc(void)
             if(!_can_timer_on){
                 if(current_getset_node<=_esc_node_end){
                     for (uint8_t j = 0; j < 2; j++) {
-                        switch (hal.util->safety_switch_state()) {
+                        switch (_param_set_mode) {
                             case 1:
                             //value to send when starting the ICE
                                 set_parameter_on_node(current_getset_node, "uavcan.esc_rcm", 2 , param_int_cb);
