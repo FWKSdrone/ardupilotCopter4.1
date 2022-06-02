@@ -626,6 +626,19 @@ void AP_UAVCAN::SRV_send_esc(void)
                         send_reboot_request(current_getset_node);
                         current_getset_node=current_getset_node+1;
                     }else{
+                        switch (_param_set_mode) {
+                            case 1:
+                            //value to send when starting the ICE
+                                gcs().send_text(MAV_SEVERITY_ERROR, "Set ESC to Voltage mode");
+                                break;
+                            case 2:
+                            //value to send after ICE is running
+                                gcs().send_text(MAV_SEVERITY_ERROR, "Set ESC to RPM mode");
+                                break;
+                            default:
+                                // nothing to send
+                                break;
+                                }   
                         _param_set_mode=0;
                         current_getset_node=_esc_node_start;
                     }
