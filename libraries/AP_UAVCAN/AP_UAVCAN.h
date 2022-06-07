@@ -274,6 +274,7 @@ private:
     AP_Int8 _param_set_mode;
     int32_t _can_timer=0;
     bool _can_timer_on=false;
+    AP_Float _param_ign_off;
 
 
     uavcan::Node<0> *_node;
