@@ -633,7 +633,7 @@ void AP_UAVCAN::SRV_send_esc(void)
             }else{
                 if(_can_timer>_can_timer_cap){
                     if(current_getset_node<=_esc_node_end){
-                        send_reboot_request(current_getset_node);
+                        //send_reboot_request(current_getset_node);
                         current_getset_node=current_getset_node+1;
                     }else{
                         switch (_param_set_mode) {

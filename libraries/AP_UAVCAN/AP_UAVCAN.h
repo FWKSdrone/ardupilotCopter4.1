@@ -47,7 +47,7 @@
 
 #define AP_UAVCAN_MAX_LED_DEVICES 4
 
-#define _can_timer_cap 1000
+#define _can_timer_cap 750
 
 // fwd-declare callback classes
 class ButtonCb;
