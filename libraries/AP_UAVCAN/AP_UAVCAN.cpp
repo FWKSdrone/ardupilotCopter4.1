@@ -607,6 +607,7 @@ void AP_UAVCAN::SRV_send_esc(void)
             k++;
         }
 
+
         if (current_getset_node<=(_esc_node_end+1) && _param_set_mode>0) {
             if(!_can_timer_on){
                 if(current_getset_node<=_esc_node_end){
@@ -614,13 +615,13 @@ void AP_UAVCAN::SRV_send_esc(void)
                         switch (_param_set_mode) {
                             case 1:
                             //value to send when starting the ICE
-                                set_parameter_on_node(current_getset_node, "uavcan.esc_rcm", 2 , param_int_cb);
-                                set_parameter_on_node(current_getset_node, "m.voltage_ramp", 80.0 , param_float_cb);
+                                //set_parameter_on_node(current_getset_node, "uavcan.esc_rcm", 2 , param_int_cb);
+                                //set_parameter_on_node(current_getset_node, "m.voltage_ramp", 80.0 , param_float_cb);
                                 break;
                             case 2:
                             //value to send after ICE is running
                                 //set_parameter_on_node(current_getset_node, "uavcan.esc_rcm", 1 , param_int_cb);
-                                set_parameter_on_node(current_getset_node, "m.voltage_ramp", _param_ign_off , param_float_cb);
+                                //set_parameter_on_node(current_getset_node, "m.voltage_ramp", _param_ign_off , param_float_cb);
                                 break;
                             default:
                                 // nothing to send
@@ -639,11 +640,11 @@ void AP_UAVCAN::SRV_send_esc(void)
                         switch (_param_set_mode) {
                             case 1:
                             //value to send when starting the ICE
-                                gcs().send_text(MAV_SEVERITY_ERROR, "Set ESC to starting mode");
+                                //gcs().send_text(MAV_SEVERITY_ERROR, "Set ESC to starting mode");
                                 break;
                             case 2:
                             //value to send after ICE is running
-                                gcs().send_text(MAV_SEVERITY_ERROR, "Set ESC to flying mode");
+                                //gcs().send_text(MAV_SEVERITY_ERROR, "Set ESC to flying mode");
                                 break;
                             default:
                                 // nothing to send
