@@ -508,6 +508,8 @@ bool AP_MotorsMatrix::ice_compute_output(float & ice_out)
 {
     float ice_in_norm_val = 1.0f;
     const RC_Channel * ice_in_channel = rc().channel(_ice_ch_in-1);
+    int GCS_message_mixmode = 0;
+    static uint16_t counter = 0;
 
     if (!(ice_in_channel == nullptr)) { // ice rc enabled and found
         // get ice radio channel boundaries and value
@@ -527,12 +529,7 @@ bool AP_MotorsMatrix::ice_compute_output(float & ice_out)
             if (_ice_wait_reset){
                 if(ice_in_norm_val<0.01f) _ice_wait_reset=false;
                     ice_in_slew=0.0f;
-                    static uint16_t counter = 0;
-                    counter++;
-                    if (counter > 5000) {
-                    counter = 0;
-                    gcs().send_text(MAV_SEVERITY_ERROR, "ICE output frozen - reset ICE input");
-                    }
+                    GCS_message_mixmode=1;
             }
             //If wasn't disarmed - not waiting for ice_in reset - passthrough the ice_ch_in value to the ICE output
             else ice_in_slew = ice_slew(ice_in_norm_val);
@@ -568,6 +565,40 @@ bool AP_MotorsMatrix::ice_compute_output(float & ice_out)
         }
     }
     ice_out = ice_in_slew * scale_out;
+
+     //handle mix_mode GCS messages
+
+   if (!(_ice_mix_mode==2)){
+        if(GCS_message_mixmode==1){
+            GCS_message_mixmode=3;
+        }else{
+            GCS_message_mixmode=2;
+        }
+    }
+
+    if(GCS_message_mixmode>0){
+        counter++;
+        if (counter > 8000) {
+            counter = 0;
+            switch (GCS_message_mixmode) {
+                case 1: { 
+                    gcs().send_text(MAV_SEVERITY_NOTICE, "ICE output frozen - reset ICE input");
+                    break;
+                } case 2: { 
+                    gcs().send_text(MAV_SEVERITY_NOTICE, "mix mode is not 2");
+                    break;
+                } case 3: { 
+                    gcs().send_text(MAV_SEVERITY_NOTICE, "ICE output frozen - reset ICE input");
+                    gcs().send_text(MAV_SEVERITY_NOTICE, "mix mode is not 2");
+                    break;
+                }default: {
+                    break;
+                }
+
+            }
+        }
+    }
+
     return true;
 }
 
