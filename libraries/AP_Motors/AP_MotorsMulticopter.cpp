@@ -529,6 +529,7 @@ int16_t AP_MotorsMulticopter::output_to_pwm(float actuator)
 {
     float pwm_output;
     if (_spool_state == SpoolState::SHUT_DOWN) {
+            // in shutdown mode, use PWM 0 or minimum PWM
             if (_ignt_mode) {
             pwm_output = get_pwm_output_min() + (get_pwm_output_max() - get_pwm_output_min()) * actuator;
         }else{
@@ -537,11 +538,6 @@ int16_t AP_MotorsMulticopter::output_to_pwm(float actuator)
             } else {
                 pwm_output = get_pwm_output_min();
             }
-        // in shutdown mode, use PWM 0 or minimum PWM
-        if (_disarm_disable_pwm && !armed()) {
-            pwm_output = 0;
-        } else {
-            pwm_output = get_pwm_output_min();
         }
     } else {
         // in all other spool modes, covert to desired PWM
