@@ -152,4 +152,14 @@ protected:
     const char*         _frame_type_string = "";  //  string representation of frame type
 private:
     static AP_MotorsMatrix *_singleton;
+
+
+    // ice functions
+    bool ice_compute_output(float & ice_out);
+    float ice_slew(const float norm_val);
+
+    // splitted thruttle functions
+    float get_booster_throttle();
+    float get_throttle_split_main();
+    float get_throttle_split_aux();
 };

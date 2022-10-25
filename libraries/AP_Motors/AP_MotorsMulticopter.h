@@ -83,6 +83,9 @@ public:
     // inverse of above
     float               actuator_to_thrust(float actuator) const;
 
+     //ingnition sequence mode
+    bool _ignt_mode=false; //when true - the aux motors recieve equal and reversed throttle input
+
     // set thrust compensation callback
     FUNCTOR_TYPEDEF(thrust_compensation_fn_t, void, float *, uint8_t);
     void                set_thrust_compensation_callback(thrust_compensation_fn_t callback) {
@@ -177,6 +180,26 @@ protected:
     AP_Float            _throttle_hover;        // estimated throttle required to hover throttle in the range 0 ~ 1
     AP_Int8             _throttle_hover_learn;  // enable/disabled hover thrust learning
     AP_Int8             _disarm_disable_pwm;    // disable PWM output while disarmed
+
+    AP_Int8             _ice_mix_mode;          // ice mix mode 
+    AP_Int8             _ice_ch_in;             // ice input channel
+    AP_Float            _ice_slew_rate;         // ice slew rate
+    AP_Float            _ice_sat_out;           //ice output at saturation point
+
+    AP_Int8             _can_rev_ch_in;         // UAVCAN reversing channel
+    AP_Float            _ice_min_arm;           // minimum allowed ice throttle while armed
+    AP_Float            _ice_ground_idle;       //ice throttle while idling on ground
+    AP_Float            _aux_ground_idle;       //aux throttle while idling on ground
+    bool                _ice_wait_reset = true;       //output 0 to ice after disarming. This can be reset by running the ice_in_ch through 0
+
+    // scaling for booster motor throttle
+    AP_Float             _boost_throttle;
+    AP_Float             _boost_throttle_des;
+
+    // splitted throttle parameters
+	AP_Float            _min_thr_aux;           //min aux throttle output when flying
+    AP_Float            _max_thr_aux;           // max aux throttle output at the end of zone 2
+	AP_Float            _sat_point_main;        // throttle level at which main engine reaches max throttle (end of zone 2) 
 
     // Maximum lean angle of yaw servo in degrees. This is specific to tricopter
     AP_Float            _yaw_servo_angle_max_deg;

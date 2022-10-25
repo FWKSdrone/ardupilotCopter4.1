@@ -99,6 +99,10 @@ void Copter::crash_check()
 // check for loss of thrust and trigger thrust boost in motors library
 void Copter::thrust_loss_check()
 {
+        //**********************************************************************************
+    //Thrust lost alrgorythm temporarily disabled
+    return;
+    //**********************************************************************************
     static uint16_t thrust_loss_counter;  // number of iterations vehicle may have been crashed
 
     // no-op if suppresed by flight options param

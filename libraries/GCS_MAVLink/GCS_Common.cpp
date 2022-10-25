@@ -2367,6 +2367,7 @@ void GCS_MAVLINK::send_autopilot_version() const
 #else
     uint32_t board_version = 0;
 #endif
+    char flight_custom_version[MAVLINK_MSG_AUTOPILOT_VERSION_FIELD_FLIGHT_CUSTOM_VERSION_LEN]{FLYWORKS_CUSTOM_VERSION};
     char flight_custom_version[MAVLINK_MSG_AUTOPILOT_VERSION_FIELD_FLIGHT_CUSTOM_VERSION_LEN]{};
     char middleware_custom_version[MAVLINK_MSG_AUTOPILOT_VERSION_FIELD_MIDDLEWARE_CUSTOM_VERSION_LEN]{};
     char os_custom_version[MAVLINK_MSG_AUTOPILOT_VERSION_FIELD_OS_CUSTOM_VERSION_LEN]{};
@@ -2391,9 +2392,9 @@ void GCS_MAVLINK::send_autopilot_version() const
                         version.patch << (8 * 1) | \
                         (uint32_t)(version.fw_type) << (8 * 0);
 
-    if (version.fw_hash_str) {
-        strncpy_noterm(flight_custom_version, version.fw_hash_str, ARRAY_SIZE(flight_custom_version));
-    }
+    //if (version.fw_hash_str) {
+    //    strncpy_noterm(flight_custom_version, version.fw_hash_str, ARRAY_SIZE(flight_custom_version));
+    //}
 
     if (version.middleware_hash_str) {
         strncpy_noterm(middleware_custom_version, version.middleware_hash_str, ARRAY_SIZE(middleware_custom_version));

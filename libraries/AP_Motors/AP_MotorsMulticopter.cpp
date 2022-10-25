@@ -207,6 +207,102 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("SAFE_TIME", 42, AP_MotorsMulticopter, _safe_time, AP_MOTORS_SAFE_TIME_DEFAULT),
 
+
+   /* START OF ICE PARAMS */
+
+    // @Param: MIX_MODE
+    // @DisplayName: ICE mix mode.
+    // @Description: ICE mix mode.
+    // @Values: 0:Disabled, 1:Pass Through, 2:Constant Gain, 3:PID
+    // @User: Advanced
+    AP_GROUPINFO("MIX_MODE", 43, AP_MotorsMulticopter, _ice_mix_mode, 0),
+
+    // @Param: CHNL_IN
+    // @DisplayName: ICE input channel
+    // @Description: ICE input channel
+    // @Range: 0 7
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("CHNL_IN", 44, AP_MotorsMulticopter, _ice_ch_in, 7),
+
+    // @Param: SLEW_RATE
+    // @DisplayName: ICE throtttle slew rate
+    // @Description: ICE throtttle slew rate
+    // @Range: 0 1
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("SLEW_RATE", 45, AP_MotorsMulticopter, _ice_slew_rate, 0.5),
+
+    /* END OF ICE PARAMS */
+
+    /* START THROTTLE SPLIT PARAMS */
+
+    // @Param: AUX_MIN_TH
+    // @DisplayName: AUX CURVE START THROTTLE
+    // @Description: value of lowest AUX throttle when flying
+    // @Range: 0 1
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("AUX_MIN_TH", 46, AP_MotorsMulticopter, _min_thr_aux, 0.2),
+
+    // @Param: AUX_MAX_TH
+    // @DisplayName: AUX MAX ZONE 2 THROTTLE
+    // @Description: max aux throttle output at the end of zone 2
+    // @Range: 0 1
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("AUX_MAX_TH", 47, AP_MotorsMulticopter, _max_thr_aux, 0.35),
+
+    // @Param: ICE_SAT_IN
+    // @DisplayName: ICE SATURATION THROTTLE POINT
+    // @Description: throttle level at which main engine reaches MAIN_SAT_OUT (end of zone 2) 
+    // @Range: 0 1
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("ICE_SAT_IN", 48, AP_MotorsMulticopter, _sat_point_main, 0.85),
+
+    // @Param: CAN_REV_CH
+    // @DisplayName: UAVCAN reversing channel
+    // @Description: RCIN channel for which 
+    // @Range: 1 10
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("CAN_REV_CH", 49, AP_MotorsMulticopter, _can_rev_ch_in, 9),
+
+    // @Param: ICE_MN_ARMED
+    // @DisplayName: Min ICE throttle 
+    // @Description: Minimum allowed normalized ice throttle while armed
+    // @Range: 0 1
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("ICE_MN_ARM", 50, AP_MotorsMulticopter, _ice_min_arm, 0.05),
+
+    // @Param: ICE_SAT_TH
+    // @DisplayName: ICE OUT AT SATURATION POINT 
+    // @Description: ICE throttle level at MAIN_SAT_TH
+    // @Range: 0 1
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("ICE_SAT_TH", 51, AP_MotorsMulticopter, _ice_sat_out, 0.6),
+
+    // @Param: ICE_IDL_TH
+    // @DisplayName: ICE OUT AT GROUND IDLE 
+    // @Description: ICE throttle level at after arm
+    // @Range: 0 1
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("ICE_IDL_TH", 52, AP_MotorsMulticopter, _ice_ground_idle, 0.1),
+
+    // @Param: AUX_IDLE_OUT
+    // @DisplayName: AUX OUT AT GROUND IDLE 
+    // @Description: AUX throttle level at after arm
+    // @Range: 0 1
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("AUX_IDL_TH", 53, AP_MotorsMulticopter, _aux_ground_idle, 0.025),
+
+    /* END OF THROTTLE SPLIT PARAMS */   
+
     AP_GROUPEND
 };
 
@@ -433,6 +529,14 @@ int16_t AP_MotorsMulticopter::output_to_pwm(float actuator)
 {
     float pwm_output;
     if (_spool_state == SpoolState::SHUT_DOWN) {
+            if (_ignt_mode) {
+            pwm_output = get_pwm_output_min() + (get_pwm_output_max() - get_pwm_output_min()) * actuator;
+        }else{
+            if (_disarm_disable_pwm && !armed()) {
+                pwm_output = 0;
+            } else {
+                pwm_output = get_pwm_output_min();
+            }
         // in shutdown mode, use PWM 0 or minimum PWM
         if (_disarm_disable_pwm && !armed()) {
             pwm_output = 0;
