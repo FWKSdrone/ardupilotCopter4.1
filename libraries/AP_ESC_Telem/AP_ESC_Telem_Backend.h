@@ -39,7 +39,8 @@ public:
         VOLTAGE     = 1 << 2,
         CURRENT     = 1 << 3,
         CONSUMPTION = 1 << 4,
-        USAGE       = 1 << 5
+        USAGE       = 1 << 5,
+        ERROR_COUNT = 1 << 6
     };
 
 
