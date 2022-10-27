@@ -28,7 +28,7 @@ struct PACKED log_Esc {
     int16_t esc_temp;
     float current_tot;
     int16_t motor_temp;
-    uint16_t error_count;
+    float error_count;
 };
 
 #define LOG_STRUCTURE_FROM_ESC_TELEM \
