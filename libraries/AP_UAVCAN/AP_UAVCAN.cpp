@@ -965,7 +965,7 @@ void AP_UAVCAN::handle_ESC_status(AP_UAVCAN* ap_uavcan, uint8_t node_id, const E
         .temperature_cdeg = int16_t((KELVIN_TO_C(cb.msg->temperature)) * 100),
         .voltage = cb.msg->voltage,
         .current = cb.msg->current,
-        .err_count= uint16_t((cb.msg->error_count)*100)
+        .err_count= uint16_t((cb.msg->error_count))
     };
 
     ap_uavcan->update_rpm(esc_index, cb.msg->rpm);
