@@ -801,6 +801,20 @@ bool AP_MotorsMatrix::setup_hexa_matrix(motor_frame_type frame_type)
         add_motors(motors, ARRAY_SIZE(motors));
         break;
     }
+    case MOTOR_FRAME_TYPE_XFW: {
+        _frame_type_string = "XFW";
+        static const AP_MotorsMatrix::MotorDefRawFW motors[] {
+            {-1.0f, 0.0f,AP_MOTORS_MATRIX_YAW_FACTOR_CW,   2 , 1.0f},
+            {-1.0f, 0.0f,AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  5 , 1.0f},
+            {-1.0f, 0.0f,AP_MOTORS_MATRIX_YAW_FACTOR_CW,   6 , 1.0f},
+            {-1.0f, 0.0f,AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  3 , 1.0f},
+            {-1.0f, 0.0f,AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  1 , 1.0f},
+            {-1.0f, 0.0f,AP_MOTORS_MATRIX_YAW_FACTOR_CW,   4 , 1.0f},
+            {-1.0f, 0.0f,AP_MOTORS_MATRIX_YAW_FACTOR_CW,   7 , 1.0f},
+        };
+        add_motors_raw_fw(motors, ARRAY_SIZE(motors));
+        break;
+    }
     case MOTOR_FRAME_TYPE_H: {
         // H is same as X except middle motors are closer to center
         _frame_type_string = "H";
