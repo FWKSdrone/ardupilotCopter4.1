@@ -76,7 +76,7 @@ public:
     void                disable_yaw_torque(void) override;
 
     // add_motor using raw roll, pitch, throttle and yaw factors
-    void                add_motor_raw(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, uint8_t testing_order, float throttle_factor);
+    void                add_motor_raw(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, uint8_t testing_order, float throttle_factor=1.0f);
 
     // same structure, but with floats.
     struct MotorDef {
