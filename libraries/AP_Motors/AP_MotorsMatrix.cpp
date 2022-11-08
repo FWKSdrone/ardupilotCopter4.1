@@ -524,6 +524,7 @@ void AP_MotorsMatrix::add_motor_raw(int8_t motor_num, float roll_fac, float pitc
     }
 }
 
+
 // add_motor using just position and prop direction - assumes that for each motor, roll and pitch factors are equal
 void AP_MotorsMatrix::add_motor(int8_t motor_num, float angle_degrees, float yaw_factor, uint8_t testing_order)
 {
@@ -538,7 +539,8 @@ void AP_MotorsMatrix::add_motor(int8_t motor_num, float roll_factor_in_degrees, 
         cosf(radians(roll_factor_in_degrees + 90)),
         cosf(radians(pitch_factor_in_degrees)),
         yaw_factor,
-        testing_order);
+        testing_order,
+        1.0f);
 }
 
 // remove_motor - disabled motor and clears all roll, pitch, throttle factors for this motor
@@ -566,7 +568,15 @@ void AP_MotorsMatrix::add_motors_raw(const struct MotorDefRaw *motors, uint8_t n
 {
     for (uint8_t i=0; i<num_motors; i++) {
         const auto &m = motors[i];
-        add_motor_raw(i, m.roll_fac, m.pitch_fac, m.yaw_fac, m.testing_order);
+        add_motor_raw(i, m.roll_fac, m.pitch_fac, m.yaw_fac, m.testing_order, 1.0f);
+    }
+}
+
+void AP_MotorsMatrix::add_motors_raw_fw(const struct MotorDefRawFW *motors, uint8_t num_motors)
+{
+    for (uint8_t i=0; i<num_motors; i++) {
+        const auto &m = motors[i];
+        add_motor_raw(i, m.roll_fac, m.pitch_fac, m.yaw_fac, m.testing_order,m.throttle_fac);
     }
 }
 
@@ -810,6 +820,20 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
                     add_motors(motors, ARRAY_SIZE(motors));
                     break;
                 }
+                case MOTOR_FRAME_TYPE_XFW: {
+                    _frame_type_string = "XFW";
+                    static const AP_MotorsMatrix::MotorDefRawFW motors[] {
+                        {-1.0f, 0.0f,AP_MOTORS_MATRIX_YAW_FACTOR_CW,   2 , 1.0f},
+                        {1.0f, 0.0f,AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  5 , 1.0f},
+                        {0.5f, 0.866f,AP_MOTORS_MATRIX_YAW_FACTOR_CW,   6 , 1.0f},
+                        {-0.5f, -0.866f,AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  3 , 1.0f},
+                        {-0.5f, 0.866f,AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  1 , 1.0f},
+                        {0.5f, -0.866f,AP_MOTORS_MATRIX_YAW_FACTOR_CW,   4 , 1.0f},
+                        {0.0f, 0.0f,0,   7 , 10.0f},
+                    };
+                    add_motors_raw_fw(motors, ARRAY_SIZE(motors));
+                    break;
+    }
                 case MOTOR_FRAME_TYPE_H: {
                     // H is same as X except middle motors are closer to center
                     _frame_type_string = "H";
