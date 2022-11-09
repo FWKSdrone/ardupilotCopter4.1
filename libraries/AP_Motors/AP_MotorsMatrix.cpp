@@ -582,14 +582,14 @@ bool AP_MotorsMatrix::ice_compute_output(float & ice_out)
             counter = 0;
             switch (GCS_message_mixmode) {
                 case 1: { 
-                    gcs().send_text(MAV_SEVERITY_NOTICE, "ICE output frozen - reset ICE input");
+                    gcs().send_text(MAV_SEVERITY_WARNING, "ICE output frozen - reset ICE input");
                     break;
                 } case 2: { 
-                    gcs().send_text(MAV_SEVERITY_NOTICE, "mix mode is not 2");
+                    gcs().send_text(MAV_SEVERITY_INFO, "mix mode is not 2");
                     break;
                 } case 3: { 
-                    gcs().send_text(MAV_SEVERITY_NOTICE, "ICE output frozen - reset ICE input");
-                    gcs().send_text(MAV_SEVERITY_NOTICE, "mix mode is not 2");
+                    gcs().send_text(MAV_SEVERITY_WARNING, "ICE output frozen - reset ICE input");
+                    gcs().send_text(MAV_SEVERITY_INFO, "mix mode is not 2");
                     break;
                 }default: {
                     break;

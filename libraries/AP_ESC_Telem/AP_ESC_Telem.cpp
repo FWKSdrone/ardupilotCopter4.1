@@ -278,7 +278,7 @@ void AP_ESC_Telem::send_esc_telemetry_mavlink(uint8_t mav_chan)
             } else {
                 rpm[j] = 0;
             }
-            count[j] = _telem_data[esc_id].count;
+            count[j] = _telem_data[esc_id].err_count;
         }
 
         // send messages
@@ -333,8 +333,11 @@ void AP_ESC_Telem::update_telem_data(const uint8_t esc_index, const AP_ESC_Telem
     if (data_mask & AP_ESC_Telem_Backend::TelemetryType::USAGE) {
         _telem_data[esc_index].usage_s = new_data.usage_s;
     }
+    if (data_mask & AP_ESC_Telem_Backend::TelemetryType::ERROR_COUNT) {
+        _telem_data[esc_index].err_count = new_data.err_count;
+    }
 
-    _telem_data[esc_index].count++;
+    //_telem_data[esc_index].count++;
     _telem_data[esc_index].types |= data_mask;
     _telem_data[esc_index].last_update_ms = AP_HAL::millis();
 }
@@ -402,7 +405,9 @@ void AP_ESC_Telem::update()
                     esc_temp    : _telem_data[i].temperature_cdeg,
                     current_tot : _telem_data[i].consumption_mah,
                     motor_temp  : _telem_data[i].motor_temp_cdeg,
-                    error_rate  : _rpm_data[i].error_rate
+                    //error_rate  : _rpm_data[i].error_rate
+                    error_count  : _telem_data[i].err_count
+
                 };
                 AP::logger().WriteBlock(&pkt, sizeof(pkt));
                 _last_telem_log_ms[i] = _telem_data[i].last_update_ms;
