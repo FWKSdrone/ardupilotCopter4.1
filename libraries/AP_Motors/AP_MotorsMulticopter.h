@@ -199,7 +199,7 @@ protected:
     // splitted throttle parameters
 	AP_Float            _min_thr_aux;           //min aux throttle output when flying
     AP_Float            _max_thr_aux;           // max aux throttle output at the end of zone 2
-	AP_Float            _sat_point_main;        // throttle level at which main engine reaches max throttle (end of zone 2) 
+	AP_Float            _aux_spoolup_band;        // throttle band to allow aux motors to spin up from idle to min 
 
     // Maximum lean angle of yaw servo in degrees. This is specific to tricopter
     AP_Float            _yaw_servo_angle_max_deg;

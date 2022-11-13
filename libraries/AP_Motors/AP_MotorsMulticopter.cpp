@@ -253,13 +253,13 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("AUX_MAX_TH", 47, AP_MotorsMulticopter, _max_thr_aux, 0.35),
 
-    // @Param: ICE_SAT_IN
-    // @DisplayName: ICE SATURATION THROTTLE POINT
+    // @Param: AUX_SU_BND
+    // @DisplayName: Throttle band to spool up aux from idle
     // @Description: throttle level at which main engine reaches MAIN_SAT_OUT (end of zone 2) 
     // @Range: 0 1
     // @Increment: 0.01
     // @User: Advanced
-    AP_GROUPINFO("ICE_SAT_IN", 48, AP_MotorsMulticopter, _sat_point_main, 0.85),
+    AP_GROUPINFO("AUX_SU_BND", 48, AP_MotorsMulticopter, _aux_spoolup_band, 0.05),
 
     // @Param: CAN_REV_CH
     // @DisplayName: UAVCAN reversing channel

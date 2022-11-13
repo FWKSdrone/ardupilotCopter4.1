@@ -615,7 +615,7 @@ float AP_MotorsMatrix::get_throttle_split_main()
     float curr_throttle=get_throttle();
     float th_split_main_out=0.0f;
 
-    if(_ice_mix_mode==2||_ice_mix_mode==4){
+    if(_ice_mix_mode==2||_ice_mix_mode==4||_ice_mix_mode==3){
         th_split_main_out= linear_interpolate(
                 _ice_min_arm,
                 _ice_sat_out,
@@ -624,20 +624,20 @@ float AP_MotorsMatrix::get_throttle_split_main()
                 1.0);
 
     }else{
-        if(curr_throttle<=_sat_point_main){
+        if(curr_throttle<=_aux_spoolup_band){
             th_split_main_out= linear_interpolate(
                 _ice_min_arm,
                 _ice_sat_out,
                 curr_throttle,
                 0.0,
-                _sat_point_main);
+                _aux_spoolup_band);
 
         } else {
             th_split_main_out = linear_interpolate(
                 _ice_sat_out,
                 1.0,
                 curr_throttle,
-                _sat_point_main,
+                _aux_spoolup_band,
                 1.0);
         }
     }
@@ -659,20 +659,20 @@ float AP_MotorsMatrix::get_throttle_split_aux()
                 1.0);
 
     }else{
-        if(curr_throttle<=_sat_point_main){
+        if(curr_throttle<=_aux_spoolup_band){
+            th_split_aux_out= linear_interpolate(
+                _aux_ground_idle,
+                _min_thr_aux,
+                curr_throttle,
+                0.0,
+                _aux_spoolup_band);
+
+        } else {
             th_split_aux_out= linear_interpolate(
                 _min_thr_aux,
                 _max_thr_aux,
                 curr_throttle,
-                0.0,
-                _sat_point_main);
-
-        } else {
-            th_split_aux_out= linear_interpolate(
-                _max_thr_aux,
-                1.0,
-                curr_throttle,
-                _sat_point_main,
+                _aux_spoolup_band,
                 1.0);
         }
     }
