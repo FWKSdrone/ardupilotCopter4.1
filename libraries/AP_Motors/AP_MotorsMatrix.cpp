@@ -735,11 +735,6 @@ void AP_MotorsMatrix::check_for_failed_motor(float throttle_thrust_best_plus_adj
     if ((_throttle_thrust_max * get_compensation_gain() > throttle_thrust_best_plus_adj) && (rpyt_high < 0.9f) && _thrust_balanced) {
         _thrust_boost = false;
     }
-
-    //***************************************
-    //Thrust balace test temporarily disabled (always true)
-    _thrust_balanced = true;
-    //****************************************
 }
 
 // output_test_seq - spin a motor at the pwm value specified
