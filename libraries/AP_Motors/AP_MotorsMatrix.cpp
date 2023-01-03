@@ -394,7 +394,7 @@ void AP_MotorsMatrix::output_armed_stabilizing()
 
     //Don't allow negative yaw on aux motors.
     //Negative Yaw is applied to ICE only
-    if (_ice_mix_mode>=2 && _ice_mix_mode<=5) remove_yaw=true;
+    if (_ice_mix_mode>=2 && _ice_mix_mode<=5 && _ice_yaw_fac>0) remove_yaw=true;
     else remove_yaw=false;
 
     // add yaw control to thrust outputs
@@ -633,7 +633,7 @@ float AP_MotorsMatrix::get_throttle_split_main()
                 0.0,
                 1.0);
         //reduce throttle due to yaw effect
-        th_split_main_out=th_split_main_out-fabsf((_yaw_in + _yaw_in_ff)*get_compensation_gain()*_ice_yaw_fac);
+        if(_ice_yaw_fac>0.0) th_split_main_out=th_split_main_out-fabsf((_yaw_in + _yaw_in_ff)*get_compensation_gain()*_ice_yaw_fac);
     }else{
         if(curr_throttle<=_sat_point_main){
             th_split_main_out= linear_interpolate(
