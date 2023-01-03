@@ -86,6 +86,8 @@ public:
      //ingnition sequence mode
     bool _ignt_mode=false; //when true - the aux motors recieve equal and reversed throttle input
 
+ 
+
     // set thrust compensation callback
     FUNCTOR_TYPEDEF(thrust_compensation_fn_t, void, float *, uint8_t);
     void                set_thrust_compensation_callback(thrust_compensation_fn_t callback) {
@@ -191,6 +193,8 @@ protected:
     AP_Float            _ice_ground_idle;       //ice throttle while idling on ground
     AP_Float            _aux_ground_idle;       //aux throttle while idling on ground
     bool                _ice_wait_reset = true;       //output 0 to ice after disarming. This can be reset by running the ice_in_ch through 0
+
+    AP_Int16             _spinup_slew;
 
     // scaling for booster motor throttle
     AP_Float             _boost_throttle;

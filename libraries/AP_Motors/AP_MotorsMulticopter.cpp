@@ -301,6 +301,17 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("AUX_IDL_TH", 53, AP_MotorsMulticopter, _aux_ground_idle, 0.025),
 
+    // @Param: SPINUP_SLEW
+    // @DisplayName: SLEW RATE AT AUX SPINUP
+    // @Description: SLEW RATE AT AUX SPINUP
+    // @Range: 0 5
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("SPINUP_SLW", 54, AP_MotorsMulticopter, _spinup_slew, 2),
+
+
+    
+
     /* END OF THROTTLE SPLIT PARAMS */   
 
     AP_GROUPEND

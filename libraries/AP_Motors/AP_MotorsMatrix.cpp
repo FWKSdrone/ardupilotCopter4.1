@@ -157,6 +157,7 @@ void AP_MotorsMatrix::set_frame_class_and_type(motor_frame_class frame_class, mo
 void AP_MotorsMatrix::output_to_motors()
 {
     int8_t i;
+    static int32_t spinupCounter=0;
 
      bool output_ice = true;
     _ignt_mode=false;
@@ -164,6 +165,8 @@ void AP_MotorsMatrix::output_to_motors()
     switch (_spool_state) {
         case SpoolState::SHUT_DOWN: {
             // no output
+
+        spinupCounter=0;
 
         float ign_switch_norm_val = 1.0f;
         const RC_Channel * ign_channel_switch = rc().channel(_can_rev_ch_in-1);
@@ -202,17 +205,26 @@ void AP_MotorsMatrix::output_to_motors()
                             }
                         }
                     }
+            spinupCounter=0;
             break;
         }
-        case SpoolState::GROUND_IDLE:
+        case SpoolState::GROUND_IDLE:{
             // sends output to motors when armed but not flying
+                float spoolup_thrust=0;
+                if(spinupCounter< (_spinup_slew * _loop_rate) && (_spinup_slew * _loop_rate) > 0){
+                    spoolup_thrust=constrain_float(_aux_ground_idle*float(spinupCounter)/float(_spinup_slew * _loop_rate),0.0,_aux_ground_idle);
+                    spinupCounter++;
+                }else{
+                    spoolup_thrust=_aux_ground_idle;
+                }
             for (i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
                 if (motor_enabled[i]) {
                     //set_actuator_with_slew(_actuator[i], actuator_spin_up_to_ground_idle());
-                    set_actuator_with_slew(_actuator[i], _aux_ground_idle);
+                    set_actuator_with_slew(_actuator[i],spoolup_thrust);
                 }
             }
             break;
+        }
         case SpoolState::SPOOLING_UP:
         case SpoolState::THROTTLE_UNLIMITED:
         case SpoolState::SPOOLING_DOWN:
@@ -224,7 +236,6 @@ void AP_MotorsMatrix::output_to_motors()
             }
             break;
     }
-
     // convert output to PWM and send to each motor
     for (i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
