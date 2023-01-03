@@ -190,6 +190,7 @@ protected:
     AP_Float            _ice_min_arm;           // minimum allowed ice throttle while armed
     AP_Float            _ice_ground_idle;       //ice throttle while idling on ground
     AP_Float            _aux_ground_idle;       //aux throttle while idling on ground
+    AP_Float            _ice_yaw_fac;           //Yaw effect on ICE throttle
     bool                _ice_wait_reset = true;       //output 0 to ice after disarming. This can be reset by running the ice_in_ch through 0
 
     // scaling for booster motor throttle

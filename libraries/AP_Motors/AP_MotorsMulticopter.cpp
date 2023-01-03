@@ -301,6 +301,15 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("AUX_IDL_TH", 53, AP_MotorsMulticopter, _aux_ground_idle, 0.025),
 
+    // @Param: ICE_YAW_FACTOR
+    // @DisplayName: YAW EFFECT ON ICE THROTTLE 
+    // @Description: AUX throttle level at after arm
+    // @Range: 0 1
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("ICE_YAW_FA", 54, AP_MotorsMulticopter, _ice_yaw_fac, 0.1),
+    
+
     /* END OF THROTTLE SPLIT PARAMS */   
 
     AP_GROUPEND

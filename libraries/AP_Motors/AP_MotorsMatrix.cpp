@@ -277,6 +277,8 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     float   rpy_scale = 1.0f;           // this is used to scale the roll, pitch and yaw to fit within the motor limits
     float   yaw_allowed = 1.0f;         // amount of yaw we can fit in
     float   thr_adj;                    // the difference between the pilot's desired throttle and throttle_thrust_best_rpy
+    
+    bool    remove_yaw;                 //Used to cancel negative yaw effect and add it to the ICE output
 
     // apply voltage and air pressure compensation
     const float compensation_gain = get_compensation_gain(); // compensation for battery voltage and altitude
@@ -390,12 +392,20 @@ void AP_MotorsMatrix::output_armed_stabilizing()
         limit.yaw = true;
     }
 
+    //Don't allow negative yaw on aux motors.
+    //Negative Yaw is applied to ICE only
+    if (_ice_mix_mode>=2 && _ice_mix_mode<=5) remove_yaw=true;
+    else remove_yaw=false;
+
     // add yaw control to thrust outputs
     float rpy_low = 1.0f;   // lowest thrust value
     float rpy_high = -1.0f; // highest thrust value
     for (i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
+
+            if (!remove_yaw || ((yaw_thrust * _yaw_factor[i])>0.0f)){
             _thrust_rpyt_out[i] = _thrust_rpyt_out[i] + yaw_thrust * _yaw_factor[i];
+            }
 
             // record lowest roll + pitch + yaw command
             if (_thrust_rpyt_out[i] < rpy_low) {
@@ -622,7 +632,8 @@ float AP_MotorsMatrix::get_throttle_split_main()
                 curr_throttle,
                 0.0,
                 1.0);
-
+        //reduce throttle due to yaw effect
+        th_split_main_out=th_split_main_out-fabsf((_yaw_in + _yaw_in_ff)*get_compensation_gain()*_ice_yaw_fac);
     }else{
         if(curr_throttle<=_sat_point_main){
             th_split_main_out= linear_interpolate(
