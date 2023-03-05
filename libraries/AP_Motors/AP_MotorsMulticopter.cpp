@@ -301,6 +301,14 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("AUX_IDL_TH", 53, AP_MotorsMulticopter, _aux_ground_idle, 0.025),
 
+    // @Param: ICE_STR_BM
+    // @DisplayName: BITMASK WHAT MOTORS ARE USED FOR ENGINE START
+    // @Description: Bitmask for stating what motors are used for engine start
+    // @Range: 0 256
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("ICE_STR_BM", 54, AP_MotorsMulticopter, _ICE_start_motors, 0),
+
     /* END OF THROTTLE SPLIT PARAMS */   
 
     AP_GROUPEND

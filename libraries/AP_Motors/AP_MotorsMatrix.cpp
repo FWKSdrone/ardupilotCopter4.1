@@ -190,7 +190,7 @@ void AP_MotorsMatrix::output_to_motors()
 
                         //output the passthrough channel value to all active motors
                         for (i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
-                            if (motor_enabled[i]) {
+                            if (motor_enabled[i] && ((_ICE_start_motors>>i) & 1)) {
                             _actuator[i] = ign_pass_norm;
                             }
                         }
