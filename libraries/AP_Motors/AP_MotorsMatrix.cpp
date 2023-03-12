@@ -159,6 +159,7 @@ void AP_MotorsMatrix::output_to_motors()
     int8_t i;
 
      bool output_ice = true;
+     bool output_alt = false;
     _ignt_mode=false;
 
     switch (_spool_state) {
@@ -194,6 +195,10 @@ void AP_MotorsMatrix::output_to_motors()
                             _actuator[i] = ign_pass_norm;
                             }
                         }
+
+                        //output same command to alternator actuator #73
+                        SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, int16_t(ign_pass_norm*100));
+                        output_alt=true;
                     }
                     else{
                         for (i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
@@ -201,6 +206,7 @@ void AP_MotorsMatrix::output_to_motors()
                                 _actuator[i] = 0.0f;
                             }
                         }
+
                     }
             break;
         }
@@ -242,6 +248,12 @@ void AP_MotorsMatrix::output_to_motors()
         ice_out = 0;
     }
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, int16_t(ice_out));
+
+    if(!output_alt){
+        //output 0 command to alternator actuator #73
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, int16_t(0));
+    }
+    
 }
 
 // get_motor_mask - returns a bitmask of which outputs are being used for motors (1 means being used)
