@@ -13,7 +13,7 @@
 #define THRUST_LOSS_CHECK_MINIMUM_THROTTLE    0.9f  // we can expect to maintain altitude above 90 % throttle
 
 // Yaw imbalance check
-#define YAW_IMBALANCE_IMAX_THRESHOLD 0.75f
+#define YAW_IMBALANCE_IMAX_THRESHOLD 0.005f
 #define YAW_IMBALANCE_WARN_MS 10000
 
 // crash_check - disarms motors if a crash has been detected
