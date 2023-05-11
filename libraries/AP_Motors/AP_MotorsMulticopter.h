@@ -196,7 +196,7 @@ protected:
     bool                _ice_wait_reset = true;       //output 0 to ice after disarming. This can be reset by running the ice_in_ch through 0
 
     // scaling for booster motor throttle
-    AP_Float             _boost_throttle;
+    float             _boost_throttle;
     AP_Float             _boost_throttle_des;
 
     // splitted throttle parameters

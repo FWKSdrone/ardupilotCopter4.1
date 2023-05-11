@@ -483,7 +483,7 @@ float AP_MotorsMatrix::ice_slew(const float norm_val) {
     static float last_norm_val = 0;
     //To avoid 0 devision in next phase
     if (_ice_slew_rate<=0)return norm_val;
-    float max_diff = 1/((_ice_slew_rate * _loop_rate)+1);
+    float max_diff = 1/((_ice_slew_rate /_dt)+1);
 
     if(norm_val >= last_norm_val) {
         if ((norm_val - last_norm_val) > max_diff) last_norm_val += max_diff;
