@@ -24,7 +24,7 @@ public:
         int16_t  motor_temp_cdeg;   // centi-degrees C, negative values allowed
         uint32_t last_update_ms;    // last update time in milliseconds, determines whether active
         uint16_t types;             // telemetry types present
-        uint16_t count;             // number of times updated
+        uint16_t err_count;             // ESC reported error count
     };
 
     struct RpmData {
@@ -41,7 +41,8 @@ public:
         VOLTAGE     = 1 << 2,
         CURRENT     = 1 << 3,
         CONSUMPTION = 1 << 4,
-        USAGE       = 1 << 5
+        USAGE       = 1 << 5,
+        ERROR_COUNT = 1 << 6
     };
 
 
