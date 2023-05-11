@@ -16,6 +16,8 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_MotorsMatrix.h"
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <GCS_MAVLink/GCS.h>
+#include <SRV_Channel/SRV_Channel.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -36,6 +38,18 @@ void AP_MotorsMatrix::init(motor_frame_class frame_class, motor_frame_type frame
 
     // enable fast channels or instant pwm
     set_update_rate(_speed_hz);
+}
+
+/**
+ * @brief scale value b/w min and max to range of 0..1
+ * 
+ * @param val 
+ * @param min 
+ * @param max 
+ * @return float [0..1]
+ */
+static float normalize(const uint16_t val, const int16_t min, const int16_t max) {
+    return (static_cast<float>(val) - min) / (max - min);
 }
 
 #if AP_SCRIPTING_ENABLED
@@ -144,21 +158,58 @@ void AP_MotorsMatrix::output_to_motors()
 {
     int8_t i;
 
+    bool output_ice = true;
+    _ignt_mode=false;
+
     switch (_spool_state) {
         case SpoolState::SHUT_DOWN: {
             // no output
-            for (i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
-                if (motor_enabled[i]) {
-                    _actuator[i] = 0.0f;
-                }
-            }
+            
+        float ign_switch_norm_val = 1.0f;
+        const RC_Channel * ign_channel_switch = rc().channel(_can_rev_ch_in-1);
+        const RC_Channel * ign_pass_channel = rc().channel(3-1);
+
+                    if (!(ign_channel_switch == nullptr)) { // ice rc enabled and found
+                        // get ice radio channel boundaries and value
+                        int16_t ign_switch_raw_val = ign_channel_switch->get_radio_in();
+                        const int16_t ign_switch_raw_min = ign_channel_switch->get_radio_min();
+                        const int16_t ign_switch_raw_max = ign_channel_switch->get_radio_max();
+
+                        ign_switch_raw_val=constrain_int16(ign_switch_raw_val, ign_switch_raw_min, ign_switch_raw_max);
+                        ign_switch_norm_val = normalize(ign_switch_raw_val, ign_switch_raw_min, ign_switch_raw_max);
+                    }
+
+                    //if ignition switch is high -> activate ignition mode
+                    if (ign_switch_norm_val > 0.75f) _ignt_mode=true;
+
+
+                //*****************************************************************
+                    if (_ignt_mode) {
+                        //get value from the ignition passthrough channel (default is RCIN3)
+                        float ign_pass_norm = normalize(ign_pass_channel->get_radio_in(), ign_pass_channel->get_radio_min(), ign_pass_channel->get_radio_max());
+
+                        //output the passthrough channel value to all active motors
+                        for (i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
+                            if (motor_enabled[i]) {
+                            _actuator[i] = ign_pass_norm;
+                            }
+                        }
+                    }
+                    else{
+                        for (i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
+                            if (motor_enabled[i]) {
+                                _actuator[i] = 0.0f;
+                            }
+                        }
+                    }
             break;
         }
         case SpoolState::GROUND_IDLE:
             // sends output to motors when armed but not flying
             for (i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
                 if (motor_enabled[i]) {
-                    set_actuator_with_slew(_actuator[i], actuator_spin_up_to_ground_idle());
+                       //set_actuator_with_slew(_actuator[i], actuator_spin_up_to_ground_idle());
+                    set_actuator_with_slew(_actuator[i], _aux_ground_idle);
                 }
             }
             break;
@@ -180,6 +231,17 @@ void AP_MotorsMatrix::output_to_motors()
             rc_write(i, output_to_pwm(_actuator[i]));
         }
     }
+
+      // calculate ice mixed output, and write it to ice servo
+    float ice_out = 0; //output for the main ICE engine
+    if ( ! ice_compute_output(ice_out) ) {
+        output_ice = false;
+    }
+
+    if ( ! output_ice ) {
+        ice_out = 0;
+    }
+    SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, int16_t(ice_out));
 }
 
 // get_motor_mask - returns a bitmask of which outputs are being used for motors (1 means being used)
@@ -221,7 +283,8 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     roll_thrust = (_roll_in + _roll_in_ff) * compensation_gain;
     pitch_thrust = (_pitch_in + _pitch_in_ff) * compensation_gain;
     yaw_thrust = (_yaw_in + _yaw_in_ff) * compensation_gain;
-    throttle_thrust = get_throttle() * compensation_gain;
+    if (_ice_mix_mode>=2 && _ice_mix_mode<=5) throttle_thrust = get_throttle_split_aux() * compensation_gain;
+    else throttle_thrust = get_throttle() * compensation_gain;
     throttle_avg_max = _throttle_avg_max * compensation_gain;
 
     // If thrust boost is active then do not limit maximum thrust
@@ -391,7 +454,11 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     const float throttle_thrust_best_plus_adj = throttle_thrust_best_rpy + thr_adj;
     for (i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
-            _thrust_rpyt_out[i] = (throttle_thrust_best_plus_adj * _throttle_factor[i]) + (rpy_scale * _thrust_rpyt_out[i]);
+                    if(_ice_mix_mode==4||_ice_mix_mode==5){
+                _thrust_rpyt_out[i] = throttle_thrust;
+            }else{
+                _thrust_rpyt_out[i] = (throttle_thrust_best_plus_adj * _throttle_factor[i]) + (rpy_scale * _thrust_rpyt_out[i]);
+            }
         }
     }
 
@@ -401,6 +468,185 @@ void AP_MotorsMatrix::output_armed_stabilizing()
 
     // check for failed motor
     check_for_failed_motor(throttle_thrust_best_plus_adj);
+}
+
+
+/**
+ * @brief limit ICE throttle level change rate
+ * 
+ * @param norm_val [0..1]
+ * @return float 
+ */
+float AP_MotorsMatrix::ice_slew(const float norm_val) {
+
+
+    static float last_norm_val = 0;
+    //To avoid 0 devision in next phase
+    if (_ice_slew_rate<=0)return norm_val;
+    float max_diff = 1/((_ice_slew_rate * _loop_rate)+1);
+
+    if(norm_val >= last_norm_val) {
+        if ((norm_val - last_norm_val) > max_diff) last_norm_val += max_diff;
+        else last_norm_val = norm_val; 
+    } else {
+        if ((last_norm_val - norm_val) > max_diff) last_norm_val -= max_diff;
+        else last_norm_val = norm_val;
+    }
+    last_norm_val=constrain_float(last_norm_val,0.0f,1.0f);
+
+    return last_norm_val;
+} 
+
+/**
+ * @brief computed ICE servo output according to 
+ * operation mode, and write it to ICE servo *iff* done 
+ * successfully.
+ * 
+ * @return true on success, false otherwise
+ */
+bool AP_MotorsMatrix::ice_compute_output(float & ice_out)
+{
+    float ice_in_norm_val = 1.0f;
+    const RC_Channel * ice_in_channel = rc().channel(_ice_ch_in-1);
+
+    if (!(ice_in_channel == nullptr)) { // ice rc enabled and found
+        // get ice radio channel boundaries and value
+        int16_t ice_in_raw_val = ice_in_channel->get_radio_in();
+        const int16_t ice_in_raw_min = ice_in_channel->get_radio_min();
+        const int16_t ice_in_raw_max = ice_in_channel->get_radio_max();
+
+        ice_in_raw_val=constrain_int16(ice_in_raw_val, ice_in_raw_min, ice_in_raw_max);
+        ice_in_norm_val = normalize(ice_in_raw_val, ice_in_raw_min, ice_in_raw_max);
+    }
+    float ice_in_slew = 0.0f;
+    float scale_out = 100.0f;
+
+    switch(_spool_state){        
+        case SpoolState::SHUT_DOWN:{
+            //If vehicle was disarmed - waiting for ice_in reset (by running input less than 1%) while outputting 0 to ice throttle
+            if (_ice_wait_reset){
+                if(ice_in_norm_val<0.01f) _ice_wait_reset=false;
+                    ice_in_slew=0.0f;
+                    static uint16_t counter = 0;
+                    counter++;
+                    if (counter > 5000) {
+                    counter = 0;
+                    gcs().send_text(MAV_SEVERITY_ERROR, "ICE output frozen - reset ICE input");
+                    }
+            }
+            //If wasn't disarmed - not waiting for ice_in reset - passthrough the ice_ch_in value to the ICE output
+            else ice_in_slew = ice_slew(ice_in_norm_val);
+            break;
+        }
+        case SpoolState::GROUND_IDLE:{
+            ice_in_slew=constrain_float(_ice_ground_idle, 0.0f, 1.0f);
+        break;
+        }
+        //if vehicle is armed
+        default: {
+            _ice_wait_reset=true;
+            switch (_ice_mix_mode) {
+                case 1: { // Pass through
+                    ice_in_slew = ice_slew(ice_in_norm_val);
+                    break;
+                } case 2: { // Throttle split - Linear singlezone
+                    ice_in_slew = get_booster_throttle();
+                    break;
+                } case 3: { // Throttle Split
+                    ice_in_slew = get_booster_throttle();
+                    break;
+                } case 4: { // Mode 2 Throttle Split Ground testing
+                    ice_in_slew = get_booster_throttle();
+                    break;
+                } case 5: { // Mode 3 Throttle Split Ground testing
+                    ice_in_slew = get_booster_throttle();
+                    break;
+                } default: {
+                    return false;
+                }
+            }
+        }
+    }
+    ice_out = ice_in_slew * scale_out;
+    return true;
+}
+
+float AP_MotorsMatrix::get_booster_throttle()
+{
+    _boost_throttle = ice_slew(get_throttle_split_main());
+    constrain_float(_boost_throttle, 0.0f, 1.0f);
+
+    return _boost_throttle;
+}
+
+float AP_MotorsMatrix::get_throttle_split_main()
+{
+    float curr_throttle=get_throttle();
+    float th_split_main_out=0.0f;
+
+    if(_ice_mix_mode==2||_ice_mix_mode==4){
+        th_split_main_out= linear_interpolate(
+                _ice_min_arm,
+                _ice_sat_out,
+                curr_throttle,
+                0.0,
+                1.0);
+
+    }else{
+        if(curr_throttle<=_sat_point_main){
+            th_split_main_out= linear_interpolate(
+                _ice_min_arm,
+                _ice_sat_out,
+                curr_throttle,
+                0.0,
+                _sat_point_main);
+
+        } else {
+            th_split_main_out = linear_interpolate(
+                _ice_sat_out,
+                1.0,
+                curr_throttle,
+                _sat_point_main,
+                1.0);
+        }
+    }
+
+    return constrain_float(th_split_main_out, 0.0f, 1.0f);
+}
+
+float AP_MotorsMatrix::get_throttle_split_aux()
+{
+    float curr_throttle=get_throttle();
+    float th_split_aux_out=0.0f;
+
+    if(_ice_mix_mode==2||_ice_mix_mode==4){
+        th_split_aux_out= linear_interpolate(
+                _min_thr_aux,
+                _max_thr_aux,
+                curr_throttle,
+                0.0,
+                1.0);
+
+    }else{
+        if(curr_throttle<=_sat_point_main){
+            th_split_aux_out= linear_interpolate(
+                _min_thr_aux,
+                _max_thr_aux,
+                curr_throttle,
+                0.0,
+                _sat_point_main);
+
+        } else {
+            th_split_aux_out= linear_interpolate(
+                _max_thr_aux,
+                1.0,
+                curr_throttle,
+                _sat_point_main,
+                1.0);
+        }
+    }
+
+    return constrain_float(th_split_aux_out, 0.0f, 1.0f);
 }
 
 // check for failed motor

@@ -584,7 +584,13 @@ void AP_UAVCAN::SRV_send_esc(void)
                 // TODO: ESC negative scaling for reverse thrust and reverse rotation
                 float scaled = cmd_max * (hal.rcout->scale_esc_to_unity(_SRV_conf[i].pulse) + 1.0) / 2.0;
 
-                scaled = constrain_float(scaled, 0, cmd_max);
+                
+                if ( ((AP_MotorsMatrix*)AP_MotorsMatrix::get_singleton())->_ignt_mode ) {
+                    scaled = constrain_float((-1.0*scaled), (-1*cmd_max), 0);
+                }
+                else{
+                    scaled = constrain_float(scaled, 0, cmd_max);
+                }
 
                 esc_msg.cmd.push_back(static_cast<int>(scaled));
             } else {

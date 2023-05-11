@@ -162,4 +162,15 @@ private:
     bool setup_octaquad_matrix(motor_frame_type frame_type);
 
     static AP_MotorsMatrix *_singleton;
+
+
+
+    // ice functions
+    bool ice_compute_output(float & ice_out);
+    float ice_slew(const float norm_val);
+
+    // splitted thruttle functions
+    float get_booster_throttle();
+    float get_throttle_split_main();
+    float get_throttle_split_aux();
 };

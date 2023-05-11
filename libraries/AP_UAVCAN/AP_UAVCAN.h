@@ -20,6 +20,8 @@
 
 #if HAL_ENABLE_LIBUAVCAN_DRIVERS
 
+#include <AP_Motors/AP_MotorsMulticopter.h>
+#include <AP_Motors/AP_MotorsMatrix.h>
 #include <uavcan/uavcan.hpp>
 #include "AP_UAVCAN_IfaceMgr.h"
 #include "AP_UAVCAN_Clock.h"
