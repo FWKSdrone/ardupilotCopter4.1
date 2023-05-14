@@ -13,7 +13,7 @@
 #define THRUST_LOSS_CHECK_MINIMUM_THROTTLE    0.9f  // we can expect to maintain altitude above 90 % throttle
 
 // Yaw imbalance check
-#define YAW_IMBALANCE_IMAX_THRESHOLD 0.75f
+#define YAW_IMBALANCE_IMAX_THRESHOLD 0.005f
 #define YAW_IMBALANCE_WARN_MS 10000
 
 // crash_check - disarms motors if a crash has been detected
@@ -224,7 +224,7 @@ void Copter::yaw_imbalance_check()
         const uint32_t now = millis();
         if (now - last_yaw_warn_ms > YAW_IMBALANCE_WARN_MS) {
             last_yaw_warn_ms = now;
-            gcs().send_text(MAV_SEVERITY_EMERGENCY, "Yaw Imbalance %0.0f%%", I *100);
+            gcs().send_text(MAV_SEVERITY_EMERGENCY, "Yaw Imbalance %0.00f%%", I *100);
         }
     }
 }

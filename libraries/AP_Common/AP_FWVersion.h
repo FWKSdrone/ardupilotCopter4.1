@@ -4,7 +4,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL_Boards.h>
 
-#define FLYWORKS_CUSTOM_VERSION "v436.00" // must be less than 7 chars (leave 1 char space for terminating null)
+#define FLYWORKS_CUSTOM_VERSION "v436.01" // must be less than 7 chars (leave 1 char space for terminating null)
 
 class PACKED AP_FWVersion {
 
