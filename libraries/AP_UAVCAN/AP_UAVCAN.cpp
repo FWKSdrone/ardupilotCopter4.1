@@ -552,6 +552,18 @@ void AP_UAVCAN::SRV_send_actuator(void)
     } while (repeat_send);
 }
 
+bool AP_UAVCAN::esc_to_start_mode (uint8_t start_node_id,uint8_t end_node_id)
+{
+    WITH_SEMAPHORE(SRV_sem);
+
+     for (uint8_t i = start_node_id; i < end_node_id+1; i++) {
+        set_parameter_on_node(i, "uavcan.esc_rcm", 2 , param_int_cb);
+     }
+     gcs().send_text(MAV_SEVERITY_ERROR, "ESCs set yo start mode");
+
+     return true;
+}
+
 void AP_UAVCAN::SRV_send_esc(void)
 {
     static const int cmd_max = uavcan::equipment::esc::RawCommand::FieldTypes::cmd::RawValueType::max();
@@ -587,6 +599,7 @@ void AP_UAVCAN::SRV_send_esc(void)
                 
                 if ( ((AP_MotorsMatrix*)AP_MotorsMatrix::get_singleton())->_ignt_mode ) {
                     scaled = constrain_float((-1.0*scaled), (-1*cmd_max), 0);
+                    esc_to_start_mode(20,25);
                 }
                 else{
                     scaled = constrain_float(scaled, 0, cmd_max);

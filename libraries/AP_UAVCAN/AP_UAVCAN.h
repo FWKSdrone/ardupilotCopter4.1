@@ -148,6 +148,9 @@ public:
     // Save parameters
     bool save_parameters_on_node(uint8_t node_id, ParamSaveCb *cb);
 
+    //Myxa mode change functions
+    bool esc_to_start_mode (uint8_t start_node_id,uint8_t end_node_id);
+
     template <typename DataType_>
     class RegistryBinder {
     protected:
@@ -343,6 +346,8 @@ private:
     static void handle_debug(AP_UAVCAN* ap_uavcan, uint8_t node_id, const DebugCb &cb);
     static void handle_param_get_set_response(AP_UAVCAN* ap_uavcan, uint8_t node_id, const ParamGetSetCb &cb);
     static void handle_param_save_response(AP_UAVCAN* ap_uavcan, uint8_t node_id, const ParamExecuteOpcodeCb &cb);
+
+
 };
 
 #endif // #if HAL_ENABLE_LIBUAVCAN_DRIVERS
