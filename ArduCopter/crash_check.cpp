@@ -14,7 +14,7 @@
 
 // Yaw imbalance check
 #define YAW_IMBALANCE_IMAX_THRESHOLD 0.005f
-#define YAW_IMBALANCE_WARN_MS 10000
+#define YAW_IMBALANCE_WARN_MS 7500
 
 // crash_check - disarms motors if a crash has been detected
 // crashes are detected by the vehicle being more than 20 degrees beyond it's angle limits continuously for more than 1 second
@@ -224,7 +224,7 @@ void Copter::yaw_imbalance_check()
         const uint32_t now = millis();
         if (now - last_yaw_warn_ms > YAW_IMBALANCE_WARN_MS) {
             last_yaw_warn_ms = now;
-            gcs().send_text(MAV_SEVERITY_EMERGENCY, "Yaw Imbalance %0.0f%%", I *100);
+            gcs().send_text(MAV_SEVERITY_EMERGENCY, "Yaw Imbalance %0.00f%%", I *100);
         }
     }
 }

@@ -583,7 +583,7 @@ bool AP_MotorsMatrix::ice_compute_output(float & ice_out)
 
      //handle mix_mode GCS messages
 
-   if (!(_ice_mix_mode==2)){
+   if (!((_ice_mix_mode==2)||(_ice_mix_mode==6))){
         if(GCS_message_mixmode==1){
             GCS_message_mixmode=3;
         }else{
@@ -600,11 +600,11 @@ bool AP_MotorsMatrix::ice_compute_output(float & ice_out)
                     gcs().send_text(MAV_SEVERITY_WARNING, "ICE output frozen - reset ICE input");
                     break;
                 } case 2: { 
-                    gcs().send_text(MAV_SEVERITY_INFO, "mix mode is not 2");
+                    gcs().send_text(MAV_SEVERITY_INFO, "mix mode is not 2 or 6");
                     break;
                 } case 3: { 
                     gcs().send_text(MAV_SEVERITY_WARNING, "ICE output frozen - reset ICE input");
-                    gcs().send_text(MAV_SEVERITY_INFO, "mix mode is not 2");
+                    gcs().send_text(MAV_SEVERITY_INFO, "mix mode is not 2 or 6");
                     break;
                 }default: {
                     break;
