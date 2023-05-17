@@ -166,6 +166,9 @@ void AP_MotorsMatrix::output_to_motors()
         case SpoolState::SHUT_DOWN: {
             // no output
 
+        _spinup_timer=_spinup_cap+1;
+        _spinup_BM=0;
+
         float ign_switch_norm_val = 1.0f;
         const RC_Channel * ign_channel_switch = rc().channel(_can_rev_ch_in-1);
         const RC_Channel * ign_pass_channel = rc().channel(3-1);
@@ -212,8 +215,32 @@ void AP_MotorsMatrix::output_to_motors()
         }
         case SpoolState::GROUND_IDLE:
             // sends output to motors when armed but not flying
+
+            //spinup one pair at a time
+            if (_spinup_BM<63){
+                if(_spinup_timer>_spinup_cap){    
+                switch (_spinup_BM){
+                    case 0:
+                        _spinup_BM=3;
+                    break;
+                    case 3:
+                        _spinup_BM=15;
+                    break;
+                    case 15:
+                        _spinup_BM=63;
+                    break;
+                    default:
+                        _spinup_BM=0;
+                    break;
+                }
+                _spinup_timer=0;
+                }else{
+                    _spinup_timer++;
+                }
+            }
+
             for (i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
-                if (motor_enabled[i]) {
+                if (motor_enabled[i]&&((_spinup_BM>>i) & 1)) {
                     //set_actuator_with_slew(_actuator[i], actuator_spin_up_to_ground_idle());
                     set_actuator_with_slew(_actuator[i], _aux_ground_idle);
                 }
