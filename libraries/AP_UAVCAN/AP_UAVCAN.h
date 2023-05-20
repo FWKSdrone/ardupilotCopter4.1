@@ -150,6 +150,10 @@ public:
 
     //Myxa mode change functions
     bool esc_to_start_mode (uint8_t start_node_id,uint8_t end_node_id);
+    bool esc_to_arm_mode (uint8_t start_node_id,uint8_t end_node_id);
+
+    #define _first_ESC_node 10
+    #define _last_ESC_node 15
 
     template <typename DataType_>
     class RegistryBinder {

@@ -557,9 +557,23 @@ bool AP_UAVCAN::esc_to_start_mode (uint8_t start_node_id,uint8_t end_node_id)
     WITH_SEMAPHORE(SRV_sem);
 
      for (uint8_t i = start_node_id; i < end_node_id+1; i++) {
-        set_parameter_on_node(i, "uavcan.esc_rcm", 2 , param_int_cb);
+        set_parameter_on_node(i, "m.spup_curr_begn", 10.0 , param_float_cb);
      }
-     gcs().send_text(MAV_SEVERITY_ERROR, "ESCs set yo start mode");
+     gcs().send_text(MAV_SEVERITY_ERROR, "ESCs set to ICE START mode");
+     ((AP_MotorsMatrix*)AP_MotorsMatrix::get_singleton())->_ESC_mode=0;
+
+     return true;
+}
+
+bool AP_UAVCAN::esc_to_arm_mode (uint8_t start_node_id,uint8_t end_node_id)
+{
+    WITH_SEMAPHORE(SRV_sem);
+
+     for (uint8_t i = start_node_id; i < end_node_id+1; i++) {
+        set_parameter_on_node(i, "m.spup_curr_begn", 5.0 , param_float_cb);
+     }
+     gcs().send_text(MAV_SEVERITY_ERROR, "ESCs set to ARM mode");
+     ((AP_MotorsMatrix*)AP_MotorsMatrix::get_singleton())->_ESC_mode=0;
 
      return true;
 }
@@ -587,6 +601,13 @@ void AP_UAVCAN::SRV_send_esc(void)
         }
     }
 
+    if ( ((AP_MotorsMatrix*)AP_MotorsMatrix::get_singleton())->_ESC_mode==1){
+        esc_to_start_mode(_first_ESC_node,_last_ESC_node);
+    }
+    if ( ((AP_MotorsMatrix*)AP_MotorsMatrix::get_singleton())->_ESC_mode==2){
+        esc_to_arm_mode(_first_ESC_node,_last_ESC_node);
+    }
+
     // if at least one is active (update) we need to send to all
     if (active_esc_num > 0) {
         k = 0;
@@ -599,7 +620,6 @@ void AP_UAVCAN::SRV_send_esc(void)
                 
                 if ( ((AP_MotorsMatrix*)AP_MotorsMatrix::get_singleton())->_ignt_mode ) {
                     scaled = constrain_float((-1.0*scaled), (-1*cmd_max), 0);
-                    esc_to_start_mode(20,25);
                 }
                 else{
                     scaled = constrain_float(scaled, 0, cmd_max);
