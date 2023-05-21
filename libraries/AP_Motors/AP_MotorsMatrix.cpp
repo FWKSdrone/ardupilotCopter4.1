@@ -536,9 +536,15 @@ bool AP_MotorsMatrix::ice_compute_output(float & ice_out)
     float scale_out = 100.0f;
 
     if(ESC_set__channel->norm_input_ignore_trim()>0){
-        if (!(_ESC_mode==20) && !(_ESC_mode==2)) _ESC_mode=2;
+        if (!(_ESC_mode==20) && !(_ESC_mode==2)){
+            _ESC_mode=2;
+            _ESC_mode_msg=true;
+        } 
     }else{
-        if (!(_ESC_mode==10) && !(_ESC_mode==1)) _ESC_mode=1;
+        if (!(_ESC_mode==10) && !(_ESC_mode==1)){
+             _ESC_mode=1;
+             _ESC_mode_msg=true;
+        }
     }
 
 
@@ -598,7 +604,7 @@ bool AP_MotorsMatrix::ice_compute_output(float & ice_out)
 
     if(GCS_message_mixmode>0){
         counter++;
-        if (counter > 8000) {
+        if (counter > 4000) {
             counter = 0;
             switch (GCS_message_mixmode) {
                 case 1: { 
@@ -616,18 +622,22 @@ bool AP_MotorsMatrix::ice_compute_output(float & ice_out)
                 }
 
             }
-            switch (_ESC_mode){
-                case 10:{
-                    gcs().send_text(MAV_SEVERITY_ERROR, "ESCs set to START mode");
-                    break;
-                }case 20:{
-                    gcs().send_text(MAV_SEVERITY_ERROR, "ESCs set to ARM mode");
-                    break;
-                }
-                default:{
-                    break;
-                }
+            if (_ESC_mode_msg){
+                switch (_ESC_mode){
+                    case 10:{
+                        gcs().send_text(MAV_SEVERITY_ERROR, "ESCs set to START mode");
+                        _ESC_mode_msg=false;
+                        break;
+                    }case 20:{
+                        gcs().send_text(MAV_SEVERITY_ERROR, "ESCs set to ARM mode");
+                        _ESC_mode_msg=false;
+                        break;
+                    }
+                    default:{
+                        break;
+                    }
 
+                }
             }
             
         }

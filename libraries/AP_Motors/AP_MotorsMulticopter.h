@@ -86,6 +86,7 @@ public:
       //ingnition sequence mode
     bool _ignt_mode=false; //when true - the aux motors recieve equal and reversed throttle input
     uint8_t _ESC_mode=0;
+    bool _ESC_mode_msg=0;
 
     // set thrust compensation callback
     FUNCTOR_TYPEDEF(thrust_compensation_fn_t, void, float *, uint8_t);
