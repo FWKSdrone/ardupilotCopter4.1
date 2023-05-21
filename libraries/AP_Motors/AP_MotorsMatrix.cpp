@@ -535,6 +535,8 @@ bool AP_MotorsMatrix::ice_compute_output(float & ice_out)
     float ice_in_slew = 0.0f;
     float scale_out = 100.0f;
 
+    gcs().send_text(MAV_SEVERITY_DEBUG, "Channel 10 norm: %f",ESC_set__channel->norm_input_ignore_trim());
+
     if(ESC_set__channel->norm_input_ignore_trim()>0){
         if (!(_ESC_mode==20) && !(_ESC_mode==2)){
             _ESC_mode=2;
