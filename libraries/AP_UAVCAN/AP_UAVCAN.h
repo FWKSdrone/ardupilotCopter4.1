@@ -149,11 +149,13 @@ public:
     bool save_parameters_on_node(uint8_t node_id, ParamSaveCb *cb);
 
     //Myxa mode change functions
-    bool esc_to_start_mode (uint8_t start_node_id,uint8_t end_node_id);
-    bool esc_to_arm_mode (uint8_t start_node_id,uint8_t end_node_id);
+    bool esc_to_start_mode ();
+    bool esc_to_arm_mode ();
 
     #define _first_ESC_node 10
     #define _last_ESC_node 15
+
+    uint8_t _current_getset_node=_first_ESC_node;
 
     template <typename DataType_>
     class RegistryBinder {
