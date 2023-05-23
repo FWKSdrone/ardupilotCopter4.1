@@ -560,7 +560,6 @@ bool AP_UAVCAN::esc_to_start_mode ()
         set_parameter_on_node(_current_getset_node, "m.spup_curr_begn", 10.0 , param_float_cb);
         _current_getset_node++;
     }else{
-        _current_getset_node=_first_ESC_node;
         ((AP_MotorsMatrix*)AP_MotorsMatrix::get_singleton())->_ESC_mode=10;
     }
      return true;
@@ -574,7 +573,6 @@ bool AP_UAVCAN::esc_to_arm_mode ()
         set_parameter_on_node(_current_getset_node, "m.spup_curr_begn", 5.0 , param_float_cb);
         _current_getset_node++;
     }else{
-        _current_getset_node=_first_ESC_node;
         ((AP_MotorsMatrix*)AP_MotorsMatrix::get_singleton())->_ESC_mode=20;
     }
      return true;
@@ -608,6 +606,10 @@ void AP_UAVCAN::SRV_send_esc(void)
     }
     if ( ((AP_MotorsMatrix*)AP_MotorsMatrix::get_singleton())->_ESC_mode==2){
         esc_to_arm_mode();
+    }
+    if (((AP_MotorsMatrix*)AP_MotorsMatrix::get_singleton())->_ESC_mode>=10)
+    {
+        _current_getset_node=_first_ESC_node;
     }
 
     // if at least one is active (update) we need to send to all
