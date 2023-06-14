@@ -647,7 +647,7 @@ float AP_MotorsMatrix::get_throttle_split_main()
 
 
     switch (_ice_mix_mode%10){
-        case 2:{
+        case 2:{ //ICE output will be dependant on get_throttle() and interpulated between ice_min_arm and ice_sat_out
             th_split_main_out= linear_interpolate(
                 _ice_min_arm,
                 _ice_sat_out,
@@ -655,7 +655,7 @@ float AP_MotorsMatrix::get_throttle_split_main()
                 0.0,
                 1.0);
                 break;
-        }case 4:{
+        }case 4:{ //ICE output will be dependant on get_throttle() and interpulated between ice_min_arm and ice_sat_out
             th_split_main_out= linear_interpolate(
                 _ice_min_arm,
                 _ice_sat_out,
@@ -663,10 +663,10 @@ float AP_MotorsMatrix::get_throttle_split_main()
                 0.0,
                 1.0);
                 break;
-        }case 6:{
+        }case 6:{ //ICE output will be equal to get_throttle()
             th_split_main_out= curr_throttle;
                     break;
-        }default:{
+        }default:{ //For all other MixModes - ICE output will be dependant on get_throttle(). Before saturation point: interpulated between ice_min_arm and ice_sat_out. After saturation point: interpulated between ice_sat_out and 100%. 
             if(curr_throttle<=_sat_point_main){
             th_split_main_out= linear_interpolate(
                 _ice_min_arm,
@@ -693,9 +693,10 @@ float AP_MotorsMatrix::get_throttle_split_aux()
 {
     float curr_throttle=get_throttle();
     float th_split_aux_out=0.0f;
+    const RC_Channel * AUX_mix_channel = rc().channel(10-1); //channel 10 input will be used for MixMode=9
 
     switch (_ice_mix_mode%10){
-        case 2:{
+        case 2:{ //Aux output will be dependant on get_throttle() and interpulated between aux_min and aux_max
             th_split_aux_out= linear_interpolate(
                     _min_thr_aux,
                     _max_thr_aux,
@@ -703,7 +704,7 @@ float AP_MotorsMatrix::get_throttle_split_aux()
                     0.0,
                     1.0);
                     break;
-        }case 4:{
+        }case 4:{ //Aux output will be dependant on get_throttle() and interpulated between aux_min and aux_max
             th_split_aux_out= linear_interpolate(
                     _min_thr_aux,
                     _max_thr_aux,
@@ -711,13 +712,24 @@ float AP_MotorsMatrix::get_throttle_split_aux()
                     0.0,
                     1.0);
                     break;
-        }case 6:{
+        }case 6:{ //Aux output will be independant of get_throttle() and equal to aux_min
             th_split_aux_out= _min_thr_aux;
                     break;
-        }case 7:{
+        }case 7:{ //Aux output will be independant of get_throttle() and equal to aux_min
+            th_split_aux_out= _min_thr_aux;
+                    break;
+        }case 8:{ //Aux output will be independant of get_throttle() and equal to (hover_throttle x aux_min)
             th_split_aux_out= get_throttle_hover()*_min_thr_aux;
                     break;
-        }default:{
+        }case 9:{ //Aux output will be independant of get_throttle() and controlled through channel 10 between aux_min and aux_max 
+            th_split_aux_out=linear_interpolate(
+                _min_thr_aux,
+                _max_thr_aux,
+                (((AUX_mix_channel->norm_input_ignore_trim())+1)/2),
+                0.0f,
+                1.0f);
+                    break;
+        }default:{ //For all other MixModes - aux output will be dependant on get_throttle(). Until the ICE saturation point min_aux->max_aux. After the saturation point max_aux->100%.
             if(curr_throttle<=_sat_point_main){
                 th_split_aux_out= linear_interpolate(
                     _min_thr_aux,
