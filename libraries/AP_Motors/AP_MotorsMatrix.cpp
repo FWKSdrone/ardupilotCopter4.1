@@ -322,7 +322,7 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     roll_thrust = (_roll_in + _roll_in_ff) * compensation_gain;
     pitch_thrust = (_pitch_in + _pitch_in_ff) * compensation_gain;
     yaw_thrust = (_yaw_in + _yaw_in_ff) * compensation_gain;
-    if (_ice_mix_mode>=2 && _ice_mix_mode<=6) throttle_thrust = get_throttle_split_aux() * compensation_gain;
+    if (_ice_mix_mode>=2 && _ice_mix_mode<=6 && !_elect_emrg) throttle_thrust = get_throttle_split_aux() * compensation_gain;
     else throttle_thrust = get_throttle() * compensation_gain;
     throttle_avg_max = _throttle_avg_max * compensation_gain;
 
@@ -549,6 +549,7 @@ bool AP_MotorsMatrix::ice_compute_output(float & ice_out)
     const RC_Channel * ice_in_channel = rc().channel(_ice_ch_in-1);
     int GCS_message_mixmode = 0;
     static uint16_t counter = 0;
+    const RC_Channel * elec_emg_channel = rc().channel(8-1); //channel 8 input will be used to trigger electric emergency mode during flight
 
     if (!(ice_in_channel == nullptr)) { // ice rc enabled and found
         // get ice radio channel boundaries and value
@@ -572,7 +573,8 @@ bool AP_MotorsMatrix::ice_compute_output(float & ice_out)
             }
             //If wasn't disarmed - not waiting for ice_in reset - passthrough the ice_ch_in value to the ICE output
             else ice_in_slew = ice_slew(ice_in_norm_val);
-            break;
+            _elect_emrg=false;
+            break;   
         }
         case SpoolState::GROUND_IDLE:{
             ice_in_slew=constrain_float(_ice_ground_idle, 0.0f, 1.0f);
@@ -581,29 +583,37 @@ bool AP_MotorsMatrix::ice_compute_output(float & ice_out)
         //if vehicle is armed
         default: {
             _ice_wait_reset=true;
-            switch (_ice_mix_mode) {
-                case 1: { // Pass through
-                    ice_in_slew = ice_slew(ice_in_norm_val);
-                    break;
-                } case 2: { // Throttle split - Linear singlezone
-                    ice_in_slew = get_booster_throttle();
-                    break;
-                } case 3: { // Throttle Split
-                    ice_in_slew = get_booster_throttle();
-                    break;
-                } case 4: { // Mode 2 Throttle Split Ground testing
-                    ice_in_slew = get_booster_throttle();
-                    break;
-                } case 5: { // Mode 3 Throttle Split Ground testing
-                    ice_in_slew = get_booster_throttle();
-                    break;
-                } case 6: { // Mode 3 Throttle Split Ground testing
-                    ice_in_slew = get_booster_throttle();
-                    break;
-                }default: {
-                    return false;
+            if(((((elec_emg_channel->norm_input_ignore_trim())+1)/2)>0.75)||_elect_emrg){
+                if(!_elect_emrg) gcs().send_text(MAV_SEVERITY_EMERGENCY, "ENTERED ELECTRIC EMERGENCY MODE");
+                ice_in_slew=0.0f;
+                _elect_emrg=true;
+            }else{
+                switch (_ice_mix_mode) {
+                    case 1: { // Pass through
+                        ice_in_slew = ice_slew(ice_in_norm_val);
+                        break;
+                    } case 2: { // Throttle split - Linear singlezone
+                        ice_in_slew = get_booster_throttle();
+                        break;
+                    } case 3: { // Throttle Split
+                        ice_in_slew = get_booster_throttle();
+                        break;
+                    } case 4: { // Mode 2 Throttle Split Ground testing
+                        ice_in_slew = get_booster_throttle();
+                        break;
+                    } case 5: { // Mode 3 Throttle Split Ground testing
+                        ice_in_slew = get_booster_throttle();
+                        break;
+                    } case 6: { // Mode 3 Throttle Split Ground testing
+                        ice_in_slew = get_booster_throttle();
+                        break;
+                    }default: {
+                        return false;
+                    }
                 }
             }
+            
+            
         }
     }
     ice_out = ice_in_slew * scale_out;
