@@ -634,9 +634,11 @@ void AP_MotorsMulticopter::update_throttle_range()
 // update the throttle input filter.  should be called at 100hz
 void AP_MotorsMulticopter::update_throttle_hover(float dt)
 {
+    gcs().send_text(MAV_SEVERITY_INFO, "Entered HT");
     if (_throttle_hover_learn != HOVER_LEARN_DISABLED) {
         // we have chosen to constrain the hover throttle to be within the range reachable by the third order expo polynomial.
         _throttle_hover = constrain_float(_throttle_hover + (dt / (dt + AP_MOTORS_THST_HOVER_TC)) * (get_throttle() - _throttle_hover), AP_MOTORS_THST_HOVER_MIN, AP_MOTORS_THST_HOVER_MAX);
+        gcs().send_text(MAV_SEVERITY_INFO, "HT: %.3f",(float)_throttle_hover);
     }
 }
 
