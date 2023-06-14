@@ -166,6 +166,9 @@ void AP_MotorsMatrix::output_to_motors()
         case SpoolState::SHUT_DOWN: {
             // no output
 
+        _spinup_timer=_spinup_cap+1;
+        _spinup_BM=0;
+
         float ign_switch_norm_val = 1.0f;
         const RC_Channel * ign_channel_switch = rc().channel(_can_rev_ch_in-1);
         const RC_Channel * ign_pass_channel = rc().channel(3-1);
@@ -212,8 +215,32 @@ void AP_MotorsMatrix::output_to_motors()
         }
         case SpoolState::GROUND_IDLE:
             // sends output to motors when armed but not flying
+
+            //spinup one pair at a time
+            if (_spinup_BM<63){
+                if(_spinup_timer>_spinup_cap){    
+                switch (_spinup_BM){
+                    case 0:
+                        _spinup_BM=3;
+                    break;
+                    case 3:
+                        _spinup_BM=15;
+                    break;
+                    case 15:
+                        _spinup_BM=63;
+                    break;
+                    default:
+                        _spinup_BM=0;
+                    break;
+                }
+                _spinup_timer=0;
+                }else{
+                    _spinup_timer++;
+                }
+            }
+
             for (i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
-                if (motor_enabled[i]) {
+                if (motor_enabled[i]&&((_spinup_BM>>i) & 1)) {
                     //set_actuator_with_slew(_actuator[i], actuator_spin_up_to_ground_idle());
                     set_actuator_with_slew(_actuator[i], _aux_ground_idle);
                 }
@@ -295,7 +322,7 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     roll_thrust = (_roll_in + _roll_in_ff) * compensation_gain;
     pitch_thrust = (_pitch_in + _pitch_in_ff) * compensation_gain;
     yaw_thrust = (_yaw_in + _yaw_in_ff) * compensation_gain;
-    if (_ice_mix_mode>=2 && _ice_mix_mode<=5) throttle_thrust = get_throttle_split_aux() * compensation_gain;
+    if (_ice_mix_mode>=2 && _ice_mix_mode<=6) throttle_thrust = get_throttle_split_aux() * compensation_gain;
     else throttle_thrust = get_throttle() * compensation_gain;
     throttle_avg_max = _throttle_avg_max * compensation_gain;
 
@@ -570,7 +597,10 @@ bool AP_MotorsMatrix::ice_compute_output(float & ice_out)
                 } case 5: { // Mode 3 Throttle Split Ground testing
                     ice_in_slew = get_booster_throttle();
                     break;
-                } default: {
+                } case 6: { // Mode 3 Throttle Split Ground testing
+                    ice_in_slew = get_booster_throttle();
+                    break;
+                }default: {
                     return false;
                 }
             }
@@ -580,7 +610,7 @@ bool AP_MotorsMatrix::ice_compute_output(float & ice_out)
 
      //handle mix_mode GCS messages
 
-   if (!(_ice_mix_mode==2)){
+   if (!((_ice_mix_mode==2)||(_ice_mix_mode==6))){
         if(GCS_message_mixmode==1){
             GCS_message_mixmode=3;
         }else{
@@ -597,11 +627,11 @@ bool AP_MotorsMatrix::ice_compute_output(float & ice_out)
                     gcs().send_text(MAV_SEVERITY_WARNING, "ICE output frozen - reset ICE input");
                     break;
                 } case 2: { 
-                    gcs().send_text(MAV_SEVERITY_INFO, "mix mode is not 2");
+                    gcs().send_text(MAV_SEVERITY_INFO, "mix mode is not 2 or 6");
                     break;
                 } case 3: { 
                     gcs().send_text(MAV_SEVERITY_WARNING, "ICE output frozen - reset ICE input");
-                    gcs().send_text(MAV_SEVERITY_INFO, "mix mode is not 2");
+                    gcs().send_text(MAV_SEVERITY_INFO, "mix mode is not 2 or 6");
                     break;
                 }default: {
                     break;
@@ -627,16 +657,29 @@ float AP_MotorsMatrix::get_throttle_split_main()
     float curr_throttle=get_throttle();
     float th_split_main_out=0.0f;
 
-    if(_ice_mix_mode==2||_ice_mix_mode==4){
-        th_split_main_out= linear_interpolate(
+
+    switch (_ice_mix_mode){
+        case 2:{
+            th_split_main_out= linear_interpolate(
                 _ice_min_arm,
                 _ice_sat_out,
                 curr_throttle,
                 0.0,
                 1.0);
-
-    }else{
-        if(curr_throttle<=_sat_point_main){
+                break;
+        }case 4:{
+            th_split_main_out= linear_interpolate(
+                _ice_min_arm,
+                _ice_sat_out,
+                curr_throttle,
+                0.0,
+                1.0);
+                break;
+        }case 6:{
+            th_split_main_out= curr_throttle;
+                    break;
+        }default:{
+            if(curr_throttle<=_sat_point_main){
             th_split_main_out= linear_interpolate(
                 _ice_min_arm,
                 _ice_sat_out,
@@ -644,13 +687,14 @@ float AP_MotorsMatrix::get_throttle_split_main()
                 0.0,
                 _sat_point_main);
 
-        } else {
-            th_split_main_out = linear_interpolate(
-                _ice_sat_out,
-                1.0,
-                curr_throttle,
-                _sat_point_main,
-                1.0);
+            } else {
+                th_split_main_out = linear_interpolate(
+                    _ice_sat_out,
+                    1.0,
+                    curr_throttle,
+                    _sat_point_main,
+                    1.0);
+            }
         }
     }
 
@@ -662,30 +706,43 @@ float AP_MotorsMatrix::get_throttle_split_aux()
     float curr_throttle=get_throttle();
     float th_split_aux_out=0.0f;
 
-    if(_ice_mix_mode==2||_ice_mix_mode==4){
-        th_split_aux_out= linear_interpolate(
-                _min_thr_aux,
-                _max_thr_aux,
-                curr_throttle,
-                0.0,
-                1.0);
-
-    }else{
-        if(curr_throttle<=_sat_point_main){
+    switch (_ice_mix_mode){
+        case 2:{
             th_split_aux_out= linear_interpolate(
-                _min_thr_aux,
-                _max_thr_aux,
-                curr_throttle,
-                0.0,
-                _sat_point_main);
-
-        } else {
+                    _min_thr_aux,
+                    _max_thr_aux,
+                    curr_throttle,
+                    0.0,
+                    1.0);
+                    break;
+        }case 4:{
             th_split_aux_out= linear_interpolate(
-                _max_thr_aux,
-                1.0,
-                curr_throttle,
-                _sat_point_main,
-                1.0);
+                    _min_thr_aux,
+                    _max_thr_aux,
+                    curr_throttle,
+                    0.0,
+                    1.0);
+                    break;
+        }case 6:{
+            th_split_aux_out= _min_thr_aux;
+                    break;
+        }default:{
+            if(curr_throttle<=_sat_point_main){
+                th_split_aux_out= linear_interpolate(
+                    _min_thr_aux,
+                    _max_thr_aux,
+                    curr_throttle,
+                    0.0,
+                    _sat_point_main);
+
+            } else {
+                th_split_aux_out= linear_interpolate(
+                    _max_thr_aux,
+                    1.0,
+                    curr_throttle,
+                    _sat_point_main,
+                    1.0);
+            }
         }
     }
 

@@ -153,6 +153,11 @@ protected:
 private:
     static AP_MotorsMatrix *_singleton;
 
+    //spinup parameters
+    uint64_t _spinup_timer=0;
+    uint16_t _spinup_BM=0;
+    #define _spinup_cap 1500
+
 
     // ice functions
     bool ice_compute_output(float & ice_out);
