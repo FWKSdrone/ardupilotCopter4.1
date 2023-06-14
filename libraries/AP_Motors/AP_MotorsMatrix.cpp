@@ -322,7 +322,7 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     roll_thrust = (_roll_in + _roll_in_ff) * compensation_gain;
     pitch_thrust = (_pitch_in + _pitch_in_ff) * compensation_gain;
     yaw_thrust = (_yaw_in + _yaw_in_ff) * compensation_gain;
-    if (_ice_mix_mode>=2 && _ice_mix_mode<=6) throttle_thrust = get_throttle_split_aux() * compensation_gain;
+    if (_ice_mix_mode>=2) throttle_thrust = get_throttle_split_aux() * compensation_gain;
     else throttle_thrust = get_throttle() * compensation_gain;
     throttle_avg_max = _throttle_avg_max * compensation_gain;
 
@@ -493,7 +493,7 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     const float throttle_thrust_best_plus_adj = throttle_thrust_best_rpy + thr_adj;
     for (i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
-               if(_ice_mix_mode==4||_ice_mix_mode==5){
+               if(_ice_mix_mode>10){
                 _thrust_rpyt_out[i] = throttle_thrust;
             }else{
                 _thrust_rpyt_out[i] = (throttle_thrust_best_plus_adj * _throttle_factor[i]) + (rpy_scale * _thrust_rpyt_out[i]);
@@ -580,28 +580,16 @@ bool AP_MotorsMatrix::ice_compute_output(float & ice_out)
         }
         //if vehicle is armed
         default: {
-            _ice_wait_reset=true;
-            switch (_ice_mix_mode) {
-                case 1: { // Pass through
-                    ice_in_slew = ice_slew(ice_in_norm_val);
-                    break;
-                } case 2: { // Throttle split - Linear singlezone
-                    ice_in_slew = get_booster_throttle();
-                    break;
-                } case 3: { // Throttle Split
-                    ice_in_slew = get_booster_throttle();
-                    break;
-                } case 4: { // Mode 2 Throttle Split Ground testing
-                    ice_in_slew = get_booster_throttle();
-                    break;
-                } case 5: { // Mode 3 Throttle Split Ground testing
-                    ice_in_slew = get_booster_throttle();
-                    break;
-                } case 6: { // Mode 3 Throttle Split Ground testing
-                    ice_in_slew = get_booster_throttle();
-                    break;
-                }default: {
-                    return false;
+            if (_ice_mix_mode>0){
+                _ice_wait_reset=true;
+                switch (_ice_mix_mode%10) {
+                    case 1: { // Pass through
+                        ice_in_slew = ice_slew(ice_in_norm_val);
+                        break;
+                    }default: {
+                        ice_in_slew = get_booster_throttle();
+                        return false;
+                    }
                 }
             }
         }
@@ -610,7 +598,7 @@ bool AP_MotorsMatrix::ice_compute_output(float & ice_out)
 
      //handle mix_mode GCS messages
 
-   if (!((_ice_mix_mode==2)||(_ice_mix_mode==6))){
+   if (!((_ice_mix_mode==2)||(_ice_mix_mode==6)||(_ice_mix_mode==7))){
         if(GCS_message_mixmode==1){
             GCS_message_mixmode=3;
         }else{
@@ -658,7 +646,7 @@ float AP_MotorsMatrix::get_throttle_split_main()
     float th_split_main_out=0.0f;
 
 
-    switch (_ice_mix_mode){
+    switch (_ice_mix_mode%10){
         case 2:{
             th_split_main_out= linear_interpolate(
                 _ice_min_arm,
@@ -706,7 +694,7 @@ float AP_MotorsMatrix::get_throttle_split_aux()
     float curr_throttle=get_throttle();
     float th_split_aux_out=0.0f;
 
-    switch (_ice_mix_mode){
+    switch (_ice_mix_mode%10){
         case 2:{
             th_split_aux_out= linear_interpolate(
                     _min_thr_aux,
@@ -725,6 +713,9 @@ float AP_MotorsMatrix::get_throttle_split_aux()
                     break;
         }case 6:{
             th_split_aux_out= _min_thr_aux;
+                    break;
+        }case 7:{
+            th_split_aux_out= get_throttle_hover()*_min_thr_aux;
                     break;
         }default:{
             if(curr_throttle<=_sat_point_main){
