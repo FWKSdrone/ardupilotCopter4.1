@@ -159,7 +159,7 @@ void AP_MotorsMatrix::output_to_motors()
     int8_t i;
 
      bool output_ice = true;
-     bool output_alt = false;
+     float output_alt = 0.0; //alternator control through reverse logic: PWM=0: maximum current, PWM=0.75: minimum current, PWM>0.75: Alternator OFF
     _ignt_mode=false;
 
     switch (_spool_state) {
@@ -198,10 +198,9 @@ void AP_MotorsMatrix::output_to_motors()
                             _actuator[i] = ign_pass_norm;
                             }
                         }
-
-                        //output same command to alternator actuator #73
-                        SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, int16_t(ign_pass_norm*100));
-                        output_alt=true;
+                        
+                        output_alt=0.76; //turn alternator off during the engine startup sequence
+    
                     }
                     else{
                         for (i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
@@ -209,6 +208,7 @@ void AP_MotorsMatrix::output_to_motors()
                                 _actuator[i] = 0.0f;
                             }
                         }
+                        output_alt=0.5; //Alternator set to max chargin current while ground idling
 
                     }
             break;
@@ -245,6 +245,8 @@ void AP_MotorsMatrix::output_to_motors()
                     set_actuator_with_slew(_actuator[i], _aux_ground_idle);
                 }
             }
+
+            output_alt=0.76; //turn alternator off during the engine ignition sequence
             break;
         case SpoolState::SPOOLING_UP:
         case SpoolState::THROTTLE_UNLIMITED:
@@ -255,6 +257,8 @@ void AP_MotorsMatrix::output_to_motors()
                     set_actuator_with_slew(_actuator[i], thrust_to_actuator(_thrust_rpyt_out[i]));
                 }
             }
+
+            output_alt=0.0; //no limit on alternator current while flying
             break;
     }
 
@@ -276,10 +280,9 @@ void AP_MotorsMatrix::output_to_motors()
     }
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, int16_t(ice_out));
 
-    if(!output_alt){
-        //output 0 command to alternator actuator #73
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, int16_t(0));
-    }
+    //output alternator command to actuator #73
+    SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, output_alt);
+    //TODO: add electric emergency output dependant on CH8>1800
     
 }
 
@@ -549,6 +552,7 @@ bool AP_MotorsMatrix::ice_compute_output(float & ice_out)
     const RC_Channel * ice_in_channel = rc().channel(_ice_ch_in-1);
     int GCS_message_mixmode = 0;
     static uint16_t counter = 0;
+
 
     if (!(ice_in_channel == nullptr)) { // ice rc enabled and found
         // get ice radio channel boundaries and value
