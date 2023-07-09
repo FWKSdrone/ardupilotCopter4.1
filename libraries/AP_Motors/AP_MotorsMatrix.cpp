@@ -574,6 +574,7 @@ bool AP_MotorsMatrix::ice_compute_output(float & ice_out)
             //If wasn't disarmed - not waiting for ice_in reset - passthrough the ice_ch_in value to the ICE output
             else ice_in_slew = ice_slew(ice_in_norm_val);
             _elect_emrg=false;
+            _emgc_counter=0;
             break;   
         }
         case SpoolState::GROUND_IDLE:{
@@ -583,11 +584,17 @@ bool AP_MotorsMatrix::ice_compute_output(float & ice_out)
         //if vehicle is armed
         default: {
             _ice_wait_reset=true;
-            if(((((elec_emg_channel->norm_input_ignore_trim())+1)/2)>0.75)||_elect_emrg){
+            
+            if(_emgc_counter>100||_elect_emrg){
                 if(!_elect_emrg) gcs().send_text(MAV_SEVERITY_EMERGENCY, "ENTERED ELECTRIC EMERGENCY MODE");
                 ice_in_slew=0.0f;
+                _emgc_counter=0;
                 _elect_emrg=true;
             }else{
+
+                if((((elec_emg_channel->norm_input_ignore_trim())+1)/2)>0.8) _emgc_counter=_emgc_counter+1;
+                else _emgc_counter=0;
+
                 switch (_ice_mix_mode) {
                     case 1: { // Pass through
                         ice_in_slew = ice_slew(ice_in_norm_val);
