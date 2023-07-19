@@ -578,7 +578,15 @@ bool AP_MotorsMatrix::ice_compute_output(float & ice_out)
             break;   
         }
         case SpoolState::GROUND_IDLE:{
-            ice_in_slew=constrain_float(_ice_ground_idle, 0.0f, 1.0f);
+             if(_emgc_counter>100||_elect_emrg){
+                if(!_elect_emrg) gcs().send_text(MAV_SEVERITY_EMERGENCY, "ENTERED ELECTRIC EMERGENCY MODE");
+                ice_in_slew=0.0f;
+                _emgc_counter=0;
+                _elect_emrg=true;
+            }else{
+                if(!_ice_wait_reset) ice_in_slew=constrain_float(_ice_ground_idle, 0.0f, 1.0f);
+                else ice_in_slew = get_booster_throttle();
+            }
         break;
         }
         //if vehicle is armed
