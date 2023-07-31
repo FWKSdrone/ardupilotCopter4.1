@@ -276,9 +276,15 @@ void AP_MotorsMatrix::output_to_motors()
     }
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, int16_t(ice_out));
 
+    if ( _elect_emrg ){
+        SRV_Channels::set_output_norm(SRV_Channel::k_ignition, 1.0);
+    }else{
+        SRV_Channels::set_output_norm(SRV_Channel::k_ignition, -0.5);
+    }
+
     if(!output_alt){
         //output 0 command to alternator actuator #73
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, int16_t(0));
+        SRV_Channels::set_output_norm(SRV_Channel::k_throttleLeft, -1.0);
     }
     
 }
@@ -563,6 +569,10 @@ bool AP_MotorsMatrix::ice_compute_output(float & ice_out)
     float ice_in_slew = 0.0f;
     float scale_out = 100.0f;
 
+    if((((elec_emg_channel->norm_input_ignore_trim())+1)/2)>0.8){
+        if(!(_emgc_counter>100)) _emgc_counter=_emgc_counter+1;
+    }else _emgc_counter=0;
+
     switch(_spool_state){        
         case SpoolState::SHUT_DOWN:{
             //If vehicle was disarmed - waiting for ice_in reset (by running input less than 1%) while outputting 0 to ice throttle
@@ -599,10 +609,6 @@ bool AP_MotorsMatrix::ice_compute_output(float & ice_out)
                 _emgc_counter=0;
                 _elect_emrg=true;
             }else{
-
-                if((((elec_emg_channel->norm_input_ignore_trim())+1)/2)>0.8) _emgc_counter=_emgc_counter+1;
-                else _emgc_counter=0;
-
                 switch (_ice_mix_mode) {
                     case 1: { // Pass through
                         ice_in_slew = ice_slew(ice_in_norm_val);

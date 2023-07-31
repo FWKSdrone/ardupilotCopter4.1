@@ -385,7 +385,7 @@ void AP_MotorsHeli_Single::update_motor_control(RotorControlState state)
 
     if (state == ROTOR_CONTROL_STOP){
         // set engine run enable aux output to not run position to kill engine when disarmed
-        SRV_Channels::set_output_limit(SRV_Channel::k_engine_run_enable, SRV_Channel::Limit::MIN);
+        SRV_Channels::set_output_limit(SRV_Channel::k_throttleLeft, SRV_Channel::Limit::MIN);
     } else {
         // else if armed, set engine run enable output to run position
         SRV_Channels::set_output_limit(SRV_Channel::k_engine_run_enable, SRV_Channel::Limit::MAX);
