@@ -712,9 +712,9 @@ float AP_MotorsMatrix::get_throttle_split_main()
                 0.0,
                 1.0);
                 break;
-        }case 6:{
+        /*}case 6:{
             th_split_main_out= curr_throttle;
-                    break;
+                    break;*/
         }default:{
             if(curr_throttle<=_sat_point_main){
             th_split_main_out= linear_interpolate(
