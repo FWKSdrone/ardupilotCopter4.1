@@ -276,10 +276,10 @@ void AP_MotorsMatrix::output_to_motors()
     }
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, int16_t(ice_out));
 
-    if ( _elect_emrg ){
-        SRV_Channels::set_output_norm(SRV_Channel::k_ignition, 1.0);
+    if ( _elect_emrg){
+        SRV_Channels::set_output_norm(SRV_Channel::k_scripting7, 1.0f);
     }else{
-        SRV_Channels::set_output_norm(SRV_Channel::k_ignition, -0.5);
+        SRV_Channels::set_output_norm(SRV_Channel::k_scripting7, -0.5f);
     }
 
     if(!output_alt){
@@ -585,24 +585,24 @@ bool AP_MotorsMatrix::ice_compute_output(float & ice_out)
             else ice_in_slew = ice_slew(ice_in_norm_val);
             _elect_emrg=false;
             _emgc_counter=0;
+            _taking_off=true;
             break;   
         }
         case SpoolState::GROUND_IDLE:{
+            _ice_wait_reset=true;
              if(_emgc_counter>100||_elect_emrg){
                 if(!_elect_emrg) gcs().send_text(MAV_SEVERITY_EMERGENCY, "ENTERED ELECTRIC EMERGENCY MODE");
                 ice_in_slew=0.0f;
                 _emgc_counter=0;
                 _elect_emrg=true;
             }else{
-                if(!_ice_wait_reset) ice_in_slew=constrain_float(_ice_ground_idle, 0.0f, 1.0f);
+                if(_taking_off) ice_in_slew=constrain_float(_ice_ground_idle, 0.0f, 1.0f);
                 else ice_in_slew = get_booster_throttle();
             }
         break;
         }
         //if vehicle is armed
         default: {
-            _ice_wait_reset=true;
-            
             if(_emgc_counter>100||_elect_emrg){
                 if(!_elect_emrg) gcs().send_text(MAV_SEVERITY_EMERGENCY, "ENTERED ELECTRIC EMERGENCY MODE");
                 ice_in_slew=0.0f;
@@ -627,6 +627,11 @@ bool AP_MotorsMatrix::ice_compute_output(float & ice_out)
                         break;
                     } case 6: { // Mode 3 Throttle Split Ground testing
                         ice_in_slew = get_booster_throttle();
+                        if(_taking_off && ice_in_slew<=_ice_ground_idle){
+                            ice_in_slew=constrain_float(ice_in_slew, _ice_ground_idle, 1.0f);
+                        }else{
+                            _taking_off=false;
+                        }
                         break;
                     }default: {
                         return false;
@@ -712,9 +717,9 @@ float AP_MotorsMatrix::get_throttle_split_main()
                 0.0,
                 1.0);
                 break;
-        /*}case 6:{
+        }case 6:{
             th_split_main_out= curr_throttle;
-                    break;*/
+                    break;
         }default:{
             if(curr_throttle<=_sat_point_main){
             th_split_main_out= linear_interpolate(

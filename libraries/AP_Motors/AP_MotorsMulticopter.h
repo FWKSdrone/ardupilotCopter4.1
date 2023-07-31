@@ -193,6 +193,7 @@ protected:
     AP_Int16            _ICE_start_motors;      //bitmask stating what motors are used for ICE engine start
     bool                _ice_wait_reset = true;       //output 0 to ice after disarming. This can be reset by running the ice_in_ch through 0
     bool                _elect_emrg = false;    //electric emergency - fly electric only in case of emergency. triggered when CH8in>1750PWM while flying
+    bool                _taking_off = true;    //is the vehicle taking-off or landing
     AP_Int8             _emgc_counter;        //electric emergency counter to avoid trigger by glitch
 
     // scaling for booster motor throttle
