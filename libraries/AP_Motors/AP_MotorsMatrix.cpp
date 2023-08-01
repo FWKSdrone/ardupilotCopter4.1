@@ -495,10 +495,7 @@ void AP_MotorsMatrix::output_armed_stabilizing()
         }
     }
 
-    AP::logger().Write("FWKS", "TimeUS,BRPY,Tadj", "Qff",
-                                        AP_HAL::micros64(),
-                                        (double)throttle_thrust_best_rpy,
-                                        (double)thr_adj);
+   
 
     // add scaled roll, pitch, constrained yaw and throttle for each motor
     const float throttle_thrust_best_plus_adj = throttle_thrust_best_rpy + thr_adj;
@@ -511,6 +508,12 @@ void AP_MotorsMatrix::output_armed_stabilizing()
             }
         }
     }
+
+     AP::logger().Write("FWKS", "TimeUS,BRPY,Tadj,rpyS", "Qfff",
+                                        AP_HAL::micros64(),
+                                        (double)throttle_thrust_best_rpy,
+                                        (double)thr_adj,
+                                        (double)rpy_scale);
 
     // determine throttle thrust for harmonic notch
     // compensation_gain can never be zero
