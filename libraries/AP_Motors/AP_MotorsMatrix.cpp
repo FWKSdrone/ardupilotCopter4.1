@@ -276,7 +276,7 @@ void AP_MotorsMatrix::output_to_motors()
     }
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, int16_t(ice_out));
 
-    if ( _elect_emrg){
+    if (_ice_ign_kill){
         SRV_Channels::set_output_norm(SRV_Channel::k_scripting7, 1.0f);
     }else{
         SRV_Channels::set_output_norm(SRV_Channel::k_scripting7, -0.5f);
@@ -585,12 +585,18 @@ bool AP_MotorsMatrix::ice_compute_output(float & ice_out)
         case SpoolState::SHUT_DOWN:{
             //If vehicle was disarmed - waiting for ice_in reset (by running input less than 1%) while outputting 0 to ice throttle
             if (_ice_wait_reset){
+                _ice_ign_kill=true;
                 if(ice_in_norm_val<0.01f) _ice_wait_reset=false;
-                    ice_in_slew=0.0f;
-                    GCS_message_mixmode=1;
+                ice_in_slew=0.0f;
+                GCS_message_mixmode=1;
+            }else{
+                //If wasn't disarmed - not waiting for ice_in reset - passthrough the ice_ch_in value to the ICE output
+                if(ice_in_norm_val<0.01f) _ice_ign_kill=true;
+                else{
+                    ice_in_slew = ice_slew(ice_in_norm_val);
+                    _ice_ign_kill=false;
+                }
             }
-            //If wasn't disarmed - not waiting for ice_in reset - passthrough the ice_ch_in value to the ICE output
-            else ice_in_slew = ice_slew(ice_in_norm_val);
             _elect_emrg=false;
             _emgc_counter=0;
             _taking_off=true;
@@ -603,9 +609,11 @@ bool AP_MotorsMatrix::ice_compute_output(float & ice_out)
                 ice_in_slew=0.0f;
                 _emgc_counter=0;
                 _elect_emrg=true;
+                _ice_ign_kill=true;
             }else{
                 if(_taking_off) ice_in_slew=constrain_float(_ice_ground_idle, 0.0f, 1.0f);
                 else ice_in_slew = get_booster_throttle();
+                _ice_ign_kill=false;
             }
         break;
         }
@@ -616,6 +624,7 @@ bool AP_MotorsMatrix::ice_compute_output(float & ice_out)
                 ice_in_slew=0.0f;
                 _emgc_counter=0;
                 _elect_emrg=true;
+                _ice_ign_kill=true;
             }else{
                 switch (_ice_mix_mode) {
                     case 1: { // Pass through
