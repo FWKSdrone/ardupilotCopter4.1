@@ -591,11 +591,8 @@ bool AP_MotorsMatrix::ice_compute_output(float & ice_out)
                 GCS_message_mixmode=1;
             }else{
                 //If wasn't disarmed - not waiting for ice_in reset - passthrough the ice_ch_in value to the ICE output
-                if(ice_in_norm_val<0.01f) _ice_ign_kill=true;
-                else{
-                    ice_in_slew = ice_slew(ice_in_norm_val);
-                    _ice_ign_kill=false;
-                }
+                ice_in_slew = ice_slew(ice_in_norm_val);
+                _ice_ign_kill=false;
             }
             _elect_emrg=false;
             _emgc_counter=0;
