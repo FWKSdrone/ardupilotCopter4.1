@@ -322,6 +322,7 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     float   rpy_scale = 1.0f;           // this is used to scale the roll, pitch and yaw to fit within the motor limits
     float   yaw_allowed = 1.0f;         // amount of yaw we can fit in
     float   thr_adj;                    // the difference between the pilot's desired throttle and throttle_thrust_best_rpy
+    float   throttle_thrust_best_rpy_log;
 
     // apply voltage and air pressure compensation
     const float compensation_gain = get_compensation_gain(); // compensation for battery voltage and altitude
@@ -469,12 +470,16 @@ void AP_MotorsMatrix::output_armed_stabilizing()
         rpy_scale = MIN(rpy_scale, -throttle_avg_max / rpy_low);
     }
 
+    //Added extra logging
+
+    throttle_thrust_best_rpy_log=throttle_thrust_best_rpy;
+
     // calculate how close the motors can come to the desired throttle
     rpy_high *= rpy_scale;
     rpy_low *= rpy_scale;
     throttle_thrust_best_rpy = -rpy_low;
     //EXPERIMENTAL
-    throttle_thrust_best_rpy=throttle_thrust;
+    //throttle_thrust_best_rpy=throttle_thrust;
     //***************************************
     thr_adj = throttle_thrust - throttle_thrust_best_rpy;
     if (rpy_scale < 1.0f) {
@@ -512,11 +517,15 @@ void AP_MotorsMatrix::output_armed_stabilizing()
         }
     }
 
-     AP::logger().Write("FWKS", "TimeUS,BRPY,Tadj,rpyS", "Qfff",
+     AP::logger().Write("FWKS", "TimeUS,BRPY,Tadj,rpyS,Yall,BRPl,rpyH,rpyL", "Qfffffff",
                                         AP_HAL::micros64(),
                                         (double)throttle_thrust_best_rpy,
                                         (double)thr_adj,
-                                        (double)rpy_scale);
+                                        (double)rpy_scale,
+                                        (double)yaw_allowed,
+                                        (double)throttle_thrust_best_rpy_log,
+                                        (double)rpy_high,
+                                        (double)rpy_low);
 
     // determine throttle thrust for harmonic notch
     // compensation_gain can never be zero
