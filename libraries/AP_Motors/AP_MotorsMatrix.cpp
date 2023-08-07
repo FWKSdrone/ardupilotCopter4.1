@@ -473,6 +473,9 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     rpy_high *= rpy_scale;
     rpy_low *= rpy_scale;
     throttle_thrust_best_rpy = -rpy_low;
+    //EXPERIMENTAL
+    throttle_thrust_best_rpy=throttle_thrust;
+    //***************************************
     thr_adj = throttle_thrust - throttle_thrust_best_rpy;
     if (rpy_scale < 1.0f) {
         // Full range is being used by roll, pitch, and yaw.
