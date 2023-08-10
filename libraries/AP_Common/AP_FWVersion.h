@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
-#define FLYWORKS_CUSTOM_VERSION "v423.15" // must be less than 7 chars (leave 1 char space for terminating null)
+#define FLYWORKS_CUSTOM_VERSION "v423.16" // must be less than 7 chars (leave 1 char space for terminating null)
 
 class PACKED AP_FWVersion {
 
