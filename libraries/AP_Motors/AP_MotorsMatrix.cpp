@@ -322,7 +322,7 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     float   rpy_scale = 1.0f;           // this is used to scale the roll, pitch and yaw to fit within the motor limits
     float   yaw_allowed = 1.0f;         // amount of yaw we can fit in
     float   thr_adj;                    // the difference between the pilot's desired throttle and throttle_thrust_best_rpy
-    float   log_params[6];
+    float   log_params[10];
 
     // apply voltage and air pressure compensation
     const float compensation_gain = get_compensation_gain(); // compensation for battery voltage and altitude
@@ -354,6 +354,12 @@ void AP_MotorsMatrix::output_armed_stabilizing()
 
     //************
     log_params[0]=throttle_thrust_best_rpy;
+    log_params[1]=roll_thrust;
+    log_params[2]=pitch_thrust;
+    log_params[3]=yaw_thrust;
+    log_params[4]=throttle_thrust;
+    log_params[5]=compensation_gain;
+
 
     // calculate throttle that gives most possible room for yaw which is the lower of:
     //      1. 0.5f - (rpy_low+rpy_high)/2.0 - this would give the maximum possible margin above the highest motor and below the lowest
@@ -380,10 +386,12 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     // this is always equal to or less than the requested yaw from the pilot or rate controller
     float rp_low = 1.0f;    // lowest thrust value
     float rp_high = -1.0f;  // highest thrust value
+    float avSUM = 0.0f;
     for (i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
             // calculate the thrust outputs for roll and pitch
             _thrust_rpyt_out[i] = roll_thrust * _roll_factor[i] + pitch_thrust * _pitch_factor[i];
+            avSUM=avSUM+_thrust_rpyt_out[i];
             // record lowest roll + pitch command
             if (_thrust_rpyt_out[i] < rp_low) {
                 rp_low = _thrust_rpyt_out[i];
@@ -406,9 +414,13 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     }
 
     //************
-    log_params[1]=rp_low;
-    log_params[2]=rp_high;
-    log_params[3]=yaw_allowed;
+    log_params[5]=avSUM/6;
+    if (_thrust_boost){
+        log_params[6]=1.0f;
+    }else{
+        log_params[6]=0.0f;
+    }
+    log_params[7]=(float)_motor_lost_index;
 
     // calculate the maximum yaw control that can be used
     // todo: make _yaw_headroom 0 to 1
@@ -438,9 +450,7 @@ void AP_MotorsMatrix::output_armed_stabilizing()
             }
         }
     }
-
-    //****************
-    log_params[4]=yaw_allowed;
+    
 
     if (fabsf(yaw_thrust) > yaw_allowed) {
         // not all commanded yaw can be used
@@ -451,10 +461,11 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     // add yaw control to thrust outputs
     float rpy_low = 1.0f;   // lowest thrust value
     float rpy_high = -1.0f; // highest thrust value
+    avSUM=0.0f;
     for (i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
             _thrust_rpyt_out[i] = _thrust_rpyt_out[i] + yaw_thrust * _yaw_factor[i];
-
+            avSUM=avSUM+_thrust_rpyt_out[i];
             // record lowest roll + pitch + yaw command
             if (_thrust_rpyt_out[i] < rpy_low) {
                 rpy_low = _thrust_rpyt_out[i];
@@ -474,6 +485,8 @@ void AP_MotorsMatrix::output_armed_stabilizing()
         }
     }
 
+    log_params[8]=avSUM/6;
+
     // calculate any scaling needed to make the combined thrust outputs fit within the output range
     if (rpy_high - rpy_low > 1.0f) {
         rpy_scale = 1.0f / (rpy_high - rpy_low);
@@ -487,10 +500,6 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     rpy_high *= rpy_scale;
     rpy_low *= rpy_scale;
     throttle_thrust_best_rpy = -rpy_low;
-
-    //***********
-    log_params[5]=rpy_scale;
-    log_params[6]=throttle_thrust_best_rpy;
 
     thr_adj = throttle_thrust - throttle_thrust_best_rpy;
     if (rpy_scale < 1.0f) {
@@ -518,17 +527,21 @@ void AP_MotorsMatrix::output_armed_stabilizing()
 
     // add scaled roll, pitch, constrained yaw and throttle for each motor
     const float throttle_thrust_best_plus_adj = throttle_thrust_best_rpy + thr_adj;
+    avSUM=0.0f;
     for (i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
                if(_ice_mix_mode==4||_ice_mix_mode==5){
                 _thrust_rpyt_out[i] = throttle_thrust;
             }else{
                 _thrust_rpyt_out[i] = (throttle_thrust_best_plus_adj * _throttle_factor[i]) + (rpy_scale * _thrust_rpyt_out[i]);
+                avSUM=avSUM+_thrust_rpyt_out[i];
             }
         }
     }
 
-     AP::logger().Write("FWKS", "TimeUS,BRP1,RPlo,RPhi,Yal1,Yal2,rpyS,BRP2", "Qfffffff",
+    log_params[9]=avSUM/6;
+
+     AP::logger().Write("FWKS", "TimeUS,BRP1,thRo,thPi,thYa,thTh,thCo,avS1,thBs,avS2,avS3", "Qffffffffff",
                                         AP_HAL::micros64(),
                                         (double)log_params[0],
                                         (double)log_params[1],
@@ -536,7 +549,10 @@ void AP_MotorsMatrix::output_armed_stabilizing()
                                         (double)log_params[3],
                                         (double)log_params[4],
                                         (double)log_params[5],
-                                        (double)log_params[6]);
+                                        (double)log_params[6],
+                                        (double)log_params[7],
+                                        (double)log_params[8],
+                                        (double)log_params[9]);
 
     // determine throttle thrust for harmonic notch
     // compensation_gain can never be zero
