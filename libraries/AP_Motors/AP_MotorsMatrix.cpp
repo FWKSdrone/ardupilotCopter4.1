@@ -859,6 +859,15 @@ float AP_MotorsMatrix::get_throttle_split_aux()
 //   sets _motor_lost_index to index of failed motor
 void AP_MotorsMatrix::check_for_failed_motor(float throttle_thrust_best_plus_adj)
 {
+    //********************Temp disable***********************
+    _thrust_boost = false;
+    _thrust_balanced = true;
+    return;
+    //*******************************************************
+
+
+
+
     // record filtered and scaled thrust output for motor loss monitoring purposes
     float alpha = 1.0f / (1.0f + _loop_rate * 0.5f);
     for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
