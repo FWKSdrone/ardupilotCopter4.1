@@ -861,9 +861,9 @@ float AP_MotorsMatrix::get_throttle_split_aux()
 void AP_MotorsMatrix::check_for_failed_motor(float throttle_thrust_best_plus_adj)
 {
     //********************Temp disable***********************
-    _thrust_boost = false;
-    _thrust_balanced = true;
-    return;
+    //_thrust_boost = false;
+    //_thrust_balanced = true;
+    //return;
     //*******************************************************
 
 
