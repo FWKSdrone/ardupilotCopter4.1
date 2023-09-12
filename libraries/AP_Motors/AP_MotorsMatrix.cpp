@@ -322,7 +322,7 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     float   rpy_scale = 1.0f;           // this is used to scale the roll, pitch and yaw to fit within the motor limits
     float   yaw_allowed = 1.0f;         // amount of yaw we can fit in
     float   thr_adj;                    // the difference between the pilot's desired throttle and throttle_thrust_best_rpy
-    float   log_params[11];
+    float   log_params[12];
 
     // apply voltage and air pressure compensation
     const float compensation_gain = get_compensation_gain(); // compensation for battery voltage and altitude
@@ -414,13 +414,13 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     }
 
     //************
-    log_params[5]=avSUM/6;
+    log_params[6]=avSUM/6;
     if (_thrust_boost){
-        log_params[6]=1.0f;
+        log_params[7]=1.0f;
     }else{
-        log_params[6]=0.0f;
+        log_params[7]=0.0f;
     }
-    log_params[7]=(float)_motor_lost_index;
+    log_params[8]=(float)_motor_lost_index;
 
     // calculate the maximum yaw control that can be used
     // todo: make _yaw_headroom 0 to 1
@@ -485,7 +485,7 @@ void AP_MotorsMatrix::output_armed_stabilizing()
         }
     }
 
-    log_params[8]=avSUM/6;
+    log_params[9]=avSUM/6;
 
     // calculate any scaling needed to make the combined thrust outputs fit within the output range
     if (rpy_high - rpy_low > 1.0f) {
@@ -539,10 +539,10 @@ void AP_MotorsMatrix::output_armed_stabilizing()
         }
     }
 
-    log_params[9]=avSUM/6;
-    log_params[10]=get_throttle_hover();
+    log_params[10]=avSUM/6;
+    log_params[11]=get_throttle_hover();
 
-     AP::logger().Write("FWKS", "TimeUS,BRP1,thRo,thPi,thYa,thTh,thCo,avS1,thBs,avS2,avS3,thHo", "Qfffffffffff",
+     AP::logger().Write("FWKS", "TimeUS,BRP1,thRo,thPi,thYa,thTh,thCo,avS1,thBs,thML,avS2,avS3,thHo", "Qfffffffffff",
                                         AP_HAL::micros64(),
                                         (double)log_params[0],
                                         (double)log_params[1],
@@ -554,7 +554,8 @@ void AP_MotorsMatrix::output_armed_stabilizing()
                                         (double)log_params[7],
                                         (double)log_params[8],
                                         (double)log_params[9],
-                                        (double)log_params[10]);
+                                        (double)log_params[10],
+                                        (double)log_params[11]);
 
     // determine throttle thrust for harmonic notch
     // compensation_gain can never be zero
