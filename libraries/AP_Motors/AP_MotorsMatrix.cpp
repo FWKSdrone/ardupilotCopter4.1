@@ -353,12 +353,7 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     throttle_thrust_best_rpy = MIN(0.5f, throttle_avg_max);
 
     //************
-    log_params[0]=throttle_thrust_best_rpy;
-    log_params[1]=roll_thrust;
-    log_params[2]=pitch_thrust;
-    log_params[3]=yaw_thrust;
-    log_params[4]=throttle_thrust;
-    log_params[5]=compensation_gain;
+    
 
 
     // calculate throttle that gives most possible room for yaw which is the lower of:
@@ -413,14 +408,7 @@ void AP_MotorsMatrix::output_armed_stabilizing()
         }
     }
 
-    //************
-    log_params[6]=avSUM/6;
-    if (_thrust_boost){
-        log_params[7]=1.0f;
-    }else{
-        log_params[7]=0.0f;
-    }
-    log_params[8]=(float)_motor_lost_index;
+    
 
     // calculate the maximum yaw control that can be used
     // todo: make _yaw_headroom 0 to 1
@@ -485,15 +473,26 @@ void AP_MotorsMatrix::output_armed_stabilizing()
         }
     }
 
-    log_params[9]=avSUM/6;
+    
+
+    ////////Log from here
+    log_params[0]=(float)_motor_lost_index;
+    log_params[1]=avSUM/6;
+    log_params[2]=0.0f;
 
     // calculate any scaling needed to make the combined thrust outputs fit within the output range
     if (rpy_high - rpy_low > 1.0f) {
         rpy_scale = 1.0f / (rpy_high - rpy_low);
+        log_params[2]=2.0f;
     }
     if (throttle_avg_max + rpy_low < 0) {
         rpy_scale = MIN(rpy_scale, -throttle_avg_max / rpy_low);
+        log_params[2]++;
     }
+
+    log_params[3]=rpy_scale;
+    log_params[4]=throttle_avg_max;
+    log_params[5]=0.0f;
 
 
     // calculate how close the motors can come to the desired throttle
@@ -511,15 +510,18 @@ void AP_MotorsMatrix::output_armed_stabilizing()
             limit.throttle_upper = true;
         }
         thr_adj = 0.0f;
+        log_params[5]=1.0f;
     } else {
         if (thr_adj < 0.0f) {
             // Throttle can't be reduced to desired value
             // todo: add lower limit flag and ensure it is handled correctly in altitude controller
             thr_adj = 0.0f;
+            log_params[5]=log_params[5]+2.0f;
         } else if (thr_adj > 1.0f - (throttle_thrust_best_rpy + rpy_high)) {
             // Throttle can't be increased to desired value
             thr_adj = 1.0f - (throttle_thrust_best_rpy + rpy_high);
             limit.throttle_upper = true;
+            log_params[5]=log_params[5]+4.0f;
         }
     }
 
@@ -538,11 +540,14 @@ void AP_MotorsMatrix::output_armed_stabilizing()
             }
         }
     }
-
+    log_params[6]=thr_adj;
+    log_params[7]=throttle_thrust_best_rpy;
+    log_params[8]=throttle_thrust;
+    log_params[9]=compensation_gain;
     log_params[10]=avSUM/6;
     log_params[11]=get_throttle_hover();
 
-     AP::logger().Write("FWKS", "TimeUS,BRP1,thRo,thPi,thYa,thTh,thCo,avS1,thBs,thML,avS2,avS3,thHo", "Qfffffffffff",
+     AP::logger().Write("FWKS", "TimeUS,MotL,avS1,IfW1,RPYs,thAM,IfW2,tAdj,BRPY,thTs,ComG,avS2,thHo", "Qfffffffffff",
                                         AP_HAL::micros64(),
                                         (double)log_params[0],
                                         (double)log_params[1],
