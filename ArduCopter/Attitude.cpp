@@ -19,7 +19,7 @@ void Copter::update_throttle_hover()
     }
 
     // do not update while climbing or descending
-    if (!is_zero(pos_control->get_vel_desired_cms().z)) {
+    if (pos_control->get_vel_desired_cms().z > g.hover_learn_d_velz_lim) {
         return;
     }
 
@@ -27,8 +27,11 @@ void Copter::update_throttle_hover()
     float throttle = motors->get_throttle();
 
     // calc average throttle if we are in a level hover.  accounts for heli hover roll trim
-    if (throttle > 0.0f && fabsf(inertial_nav.get_velocity_z_up_cms()) < 60 &&
-        labs(ahrs.roll_sensor-attitude_control->get_roll_trim_cd()) < 500 && labs(ahrs.pitch_sensor) < 500) {
+    if (throttle > 0.0f &&
+        fabsf(inertial_nav.get_velocity_z_up_cms()) < g.hover_learn_velz_lim &&
+        labs(ahrs.roll_sensor-attitude_control->get_roll_trim_cd()) < g.hover_learn_att_lim &&
+        labs(ahrs.pitch_sensor) < g.hover_learn_d_velz_lim)
+    {
         // Can we set the time constant automatically
         motors->update_throttle_hover(0.01f);
 #if HAL_GYROFFT_ENABLED

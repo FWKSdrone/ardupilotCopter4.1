@@ -425,6 +425,33 @@ const AP_Param::Info Copter::var_info[] = {
     // @User: Advanced
     GSCALAR(rc_speed, "RC_SPEED",              RC_FAST_SPEED),
 
+    // @Param: HOVER_DVELZ_LIM
+    // @DisplayName: Maximum desired vel cms for allowing hover learn
+    // @Description: The maximum desires vertical speed in cm/s threshold for triggreing hover learn
+    // @Units: cm/s
+    // @Range: 0 500
+    // @Increment: 10
+    // @User: Standard
+    GSCALAR(hover_learn_d_velz_lim,     "HOVER_DVELZ_LIM",   50),
+
+    // @Param: HOVER_VELZ_LIM
+    // @DisplayName: Maximum desired vel cms for allowing hover learn
+    // @Description: The maximum vertical speed in cm/s threshold for triggreing hover learn
+    // @Units: cm/s
+    // @Range: 0 500
+    // @Increment: 10
+    // @User: Standard
+    GSCALAR(hover_learn_velz_lim,     "HOVER_VELZ_LIM",   60),
+
+    // @Param: HOVER_ATT_LIM
+    // @DisplayName: Maximum roll and pitch angle for allowing hover learn
+    // @Description: The maximum roll and pitch angle threshold for triggreing hover learn
+    // @Units: cm/s
+    // @Range: 0 500
+    // @Increment: 10
+    // @User: Standard
+    GSCALAR(hover_learn_att_lim,     "HOVER_ATT_LIM",   500),
+
 #if MODE_ACRO_ENABLED == ENABLED || MODE_SPORT_ENABLED == ENABLED
     // @Param: ACRO_BAL_ROLL
     // @DisplayName: Acro Balance Roll

@@ -377,6 +377,10 @@ public:
 
         k_param_vehicle = 257, // vehicle common block of parameters
 
+        k_param_hover_learn_d_velz_lim,
+        k_param_hover_learn_velz_lim,
+        k_param_hover_learn_att_lim,
+
         // the k_param_* space is 9-bits in size
         // 511: reserved
     };
@@ -471,6 +475,10 @@ public:
     AP_Int8                 acro_trainer;
     AP_Float                acro_rp_expo;
 #endif
+
+    AP_Int16                hover_learn_d_velz_lim;
+    AP_Int16                hover_learn_velz_lim;
+    AP_Int16                hover_learn_att_lim;
 
     // Note: keep initializers here in the same order as they are declared
     // above.

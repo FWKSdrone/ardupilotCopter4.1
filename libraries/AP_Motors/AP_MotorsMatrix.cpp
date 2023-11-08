@@ -547,7 +547,7 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     log_params[10]=avSUM/6;
     log_params[11]=get_throttle_hover();
 
-     AP::logger().Write("FWKS", "TimeUS,MotL,avS1,IfW1,RPYs,thAM,IfW2,tAdj,BRPY,thTs,ComG,avS2,thHo", "Qfffffffffff",
+     AP::logger().Write("FWKS", "TimeUS,MotL,avS1,IfW1,RPYs,thAM,IfW2,tAdj,BRPY,thTs,CmG,avS2,thH", "Qffffffffffff",
                                         AP_HAL::micros64(),
                                         (double)log_params[0],
                                         (double)log_params[1],
